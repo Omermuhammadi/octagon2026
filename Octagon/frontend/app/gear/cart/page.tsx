@@ -25,6 +25,7 @@ export default function CartPage() {
     const [ordering, setOrdering] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [error, setError] = useState("");
+    const [cartLoaded, setCartLoaded] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -38,12 +39,15 @@ export default function CartPage() {
         if (saved) {
             try { setCart(JSON.parse(saved)); } catch {}
         }
+        setCartLoaded(true);
     }, []);
 
-    // Save cart
+    // Save cart (only after initial load)
     useEffect(() => {
-        localStorage.setItem("octagon_cart", JSON.stringify(cart));
-    }, [cart]);
+        if (cartLoaded) {
+            localStorage.setItem("octagon_cart", JSON.stringify(cart));
+        }
+    }, [cart, cartLoaded]);
 
     const updateQuantity = (productId: string, delta: number) => {
         setCart(prev => prev.map(item => {
@@ -65,6 +69,10 @@ export default function CartPage() {
 
     const handleCheckout = async () => {
         if (!token || cart.length === 0) return;
+        if (!address.trim()) {
+            setError("Please enter a shipping address");
+            return;
+        }
         setError("");
         setOrdering(true);
 

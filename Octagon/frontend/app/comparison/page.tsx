@@ -13,11 +13,6 @@ export default function ComparisonPage() {
     const { isAuthenticated, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            router.push("/login");
-        }
-    }, [authLoading, isAuthenticated, router]);
     const [fighter1Search, setFighter1Search] = useState("");
     const [fighter2Search, setFighter2Search] = useState("");
     const [fighter1Suggestions, setFighter1Suggestions] = useState<Fighter[]>([]);
@@ -31,18 +26,15 @@ export default function ComparisonPage() {
     const [showSuggestions2, setShowSuggestions2] = useState(false);
     const [searching1, setSearching1] = useState(false);
     const [searching2, setSearching2] = useState(false);
-    
+
     const dropdown1Ref = useRef<HTMLDivElement>(null);
     const dropdown2Ref = useRef<HTMLDivElement>(null);
 
-    // Show loading while checking auth state
-    if (authLoading || !isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-octagon-red" />
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.push("/login");
+        }
+    }, [authLoading, isAuthenticated, router]);
 
     // Handle click outside to close dropdowns
     useEffect(() => {
@@ -131,11 +123,10 @@ export default function ComparisonPage() {
         setShowSuggestions2(false);
     };
 
-    // Calculate radar chart data
     const getRadarData = () => {
         if (!selectedFighter1 || !selectedFighter2) return [];
         return [
-            { 
+            {
                 subject: 'Str. Accuracy', 
                 A: selectedFighter1.strikingAccuracy || 0, 
                 B: selectedFighter2.strikingAccuracy || 0, 
@@ -173,6 +164,14 @@ export default function ComparisonPage() {
             },
         ];
     };
+
+    if (authLoading || !isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-octagon-red" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-black pt-24 px-4 sm:px-6 lg:px-8">

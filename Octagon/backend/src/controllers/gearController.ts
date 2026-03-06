@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import { Product, Order } from '../models';
 import { AuthRequest } from '../middleware';
 
+// Escape user input for safe use in $regex (prevents ReDoS)
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/gear - Get products with filters and pagination
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -13,9 +18,10 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     }
 
     if (search) {
+      const safeSearch = escapeRegex(search as string);
       filter.$or = [
-        { name: { $regex: search as string, $options: 'i' } },
-        { description: { $regex: search as string, $options: 'i' } },
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
@@ -80,9 +86,17 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // Validate all item quantities are positive integers
+    for (const item of items) {
+      if (!item.productId || !Number.isInteger(item.quantity) || item.quantity < 1) {
+        res.status(400).json({ success: false, message: 'Each item must have a valid productId and a positive integer quantity' });
+        return;
+      }
+    }
+
     // Validate products and calculate total — use atomic stock decrement
     let total = 0;
-    const orderItems = [];
+    const orderItems: { productId: any; name: string; price: number; quantity: number }[] = [];
 
     for (const item of items) {
       // Atomically decrement stock — only succeeds if enough stock exists
@@ -92,6 +106,12 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
         { new: true }
       );
       if (!product) {
+        // Rollback previously decremented stock for items that succeeded
+        for (const prevItem of orderItems) {
+          await Product.findByIdAndUpdate(prevItem.productId, {
+            $inc: { stock: prevItem.quantity },
+          });
+        }
         // Check if product exists at all vs out of stock
         const exists = await Product.findById(item.productId);
         if (!exists) {

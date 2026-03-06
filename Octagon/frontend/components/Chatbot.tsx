@@ -94,9 +94,14 @@ export function Chatbot() {
         }
     };
 
-    // Format markdown-like bold text
+    // Format markdown-like bold text with HTML escaping
     const formatText = (text: string) => {
-        return text
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        return escaped
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br/>');
     };

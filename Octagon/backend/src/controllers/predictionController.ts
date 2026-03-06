@@ -3,6 +3,11 @@ import { AuthRequest } from '../middleware';
 import { Fighter, Prediction } from '../models';
 import { predict } from '../services/predictionEngine';
 
+// Escape user input for safe use in $regex (prevents ReDoS)
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * POST /api/predictions - Generate a prediction for a fighter matchup
  */
@@ -15,10 +20,10 @@ export const createPrediction = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Look up fighters
+    // Look up fighters (escape input for safe regex)
     const [f1, f2] = await Promise.all([
-      Fighter.findOne({ name: { $regex: fighter1Name, $options: 'i' } }).lean(),
-      Fighter.findOne({ name: { $regex: fighter2Name, $options: 'i' } }).lean(),
+      Fighter.findOne({ name: { $regex: escapeRegex(fighter1Name), $options: 'i' } }).lean(),
+      Fighter.findOne({ name: { $regex: escapeRegex(fighter2Name), $options: 'i' } }).lean(),
     ]);
 
     if (!f1 || !f2) {

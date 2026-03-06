@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import { Gym } from '../models';
 
+// Escape user input for safe use in $regex (prevents ReDoS)
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/gyms - Get gyms with filters
 export const getGyms = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -8,7 +13,7 @@ export const getGyms = async (req: Request, res: Response): Promise<void> => {
     const filter: Record<string, any> = {};
 
     if (city && city !== 'All Cities') {
-      filter.city = { $regex: city as string, $options: 'i' };
+      filter.city = { $regex: escapeRegex(city as string), $options: 'i' };
     }
 
     if (discipline && discipline !== 'All') {
@@ -16,15 +21,16 @@ export const getGyms = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (priceRange && priceRange !== 'All') {
-      filter.priceRange = { $regex: priceRange as string, $options: 'i' };
+      filter.priceRange = { $regex: escapeRegex(priceRange as string), $options: 'i' };
     }
 
     if (search) {
+      const safeSearch = escapeRegex(search as string);
       filter.$or = [
-        { name: { $regex: search as string, $options: 'i' } },
-        { area: { $regex: search as string, $options: 'i' } },
-        { city: { $regex: search as string, $options: 'i' } },
-        { description: { $regex: search as string, $options: 'i' } },
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { area: { $regex: safeSearch, $options: 'i' } },
+        { city: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

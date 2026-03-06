@@ -528,7 +528,7 @@ export const chatApi = {
     }),
 
   getHistory: (sessionId: string, token: string) =>
-    apiRequest('/chat/history', { token }),
+    apiRequest('/chat/history' + (sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''), { token }),
 };
 
 // ============================================

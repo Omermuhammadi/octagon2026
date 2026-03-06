@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
         try {
             const response = await authApi.forgotPassword(email);
             // In development, the API returns the code for testing
-            if (response.data?.resetCode) {
+            if (response.data?.resetCode && process.env.NODE_ENV !== 'production') {
                 setDevCode(response.data.resetCode);
             }
             setStep("code");

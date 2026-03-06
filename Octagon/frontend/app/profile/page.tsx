@@ -12,12 +12,12 @@ import { useRouter } from "next/navigation";
 // === FAN/LEARNER OPTIONS ===
 const fanExperienceLevels = ["Beginner", "Intermediate", "Advanced"];
 const fanTrainingGoals = ["Learn MMA Basics", "Fitness & Conditioning", "Self-Defense", "Become a Fighter"];
-const fanDisciplines = ["MMA", "BJJ", "Muay Thai", "Boxing", "Karate", "Wrestling", "Judo", "Taekwondo"];
+const fanDisciplines = ["MMA", "BJJ", "Muay Thai", "Boxing", "Karate", "Wrestling"];
 
 // === COACH OPTIONS ===
 const coachExperienceLevels = ["Certified Coach", "Head Coach", "Assistant Coach", "Guest Instructor"];
 const coachSpecializations = ["Striking Coach", "Grappling Coach", "Strength & Conditioning", "Fight Strategy", "Full MMA Coach"];
-const coachDisciplines = ["MMA", "BJJ", "Muay Thai", "Boxing", "Wrestling", "Kickboxing"];
+const coachDisciplines = ["MMA", "BJJ", "Muay Thai", "Boxing", "Wrestling", "Karate"];
 
 // Map for API compatibility
 const experienceLevelApiMap: Record<string, ProfileUpdateData['experienceLevel']> = {
@@ -49,9 +49,6 @@ const disciplineApiMap: Record<string, ProfileUpdateData['discipline']> = {
     "Boxing": "Boxing",
     "Karate": "Karate",
     "Wrestling": "Wrestling",
-    "Judo": "Karate",
-    "Taekwondo": "Karate",
-    "Kickboxing": "Muay Thai"
 };
 
 export default function ProfilePage() {

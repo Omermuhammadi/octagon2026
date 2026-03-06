@@ -638,10 +638,12 @@ export const sendMessage = async (req: AuthRequest, res: Response): Promise<void
         { sessionId: sid },
         {
           $push: {
-            messages: [
-              { role: 'user', content: message, timestamp: new Date() },
-              { role: 'assistant', content: responseText, timestamp: new Date() },
-            ],
+            messages: {
+              $each: [
+                { role: 'user', content: message, timestamp: new Date() },
+                { role: 'assistant', content: responseText, timestamp: new Date() },
+              ],
+            },
           },
           $set: {
             intent,
@@ -676,11 +678,20 @@ export const getChatHistory = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { sessionId } = req.query;
 
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
     if (sessionId) {
-      const chatLog = await ChatLog.findOne({ sessionId: sessionId as string }).lean();
+      // Only return sessions belonging to the authenticated user
+      const chatLog = await ChatLog.findOne({
+        sessionId: sessionId as string,
+        userId: req.user._id,
+      }).lean();
       res.json({ success: true, data: chatLog });
     } else {
-      const chatLogs = await ChatLog.find({ userId: req.user?._id })
+      const chatLogs = await ChatLog.find({ userId: req.user._id })
         .sort({ updatedAt: -1 })
         .limit(20)
         .lean();

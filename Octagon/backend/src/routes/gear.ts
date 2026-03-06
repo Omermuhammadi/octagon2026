@@ -10,8 +10,8 @@ router.get('/', getProducts);
 // GET /api/gear/orders - Get user's orders
 router.get('/orders', protect, getOrders);
 
-// POST /api/gear/seed - Seed product data
-router.post('/seed', seedProducts);
+// POST /api/gear/seed - Seed product data (requires auth)
+router.post('/seed', protect, seedProducts);
 
 // POST /api/gear/checkout - Create an order
 router.post('/checkout', protect, createOrder);

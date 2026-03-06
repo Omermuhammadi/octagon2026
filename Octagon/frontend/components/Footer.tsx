@@ -25,12 +25,12 @@ export function Footer() {
                     </div>
 
                     <div>
-                        <h3 className="text-white font-bold uppercase tracking-wider mb-4">Support</h3>
+                        <h3 className="text-white font-bold uppercase tracking-wider mb-4">More</h3>
                         <ul className="space-y-2">
-                            <li><Link href="/about" className="text-gray-400 hover:text-octagon-red transition-colors">About Us</Link></li>
-                            <li><Link href="/contact" className="text-gray-400 hover:text-octagon-red transition-colors">Contact</Link></li>
-                            <li><Link href="/privacy" className="text-gray-400 hover:text-octagon-red transition-colors">Privacy Policy</Link></li>
-                            <li><Link href="/terms" className="text-gray-400 hover:text-octagon-red transition-colors">Terms of Service</Link></li>
+                            <li><Link href="/self-defense" className="text-gray-400 hover:text-octagon-red transition-colors">Self-Defense</Link></li>
+                            <li><Link href="/gear" className="text-gray-400 hover:text-octagon-red transition-colors">Gear Store</Link></li>
+                            <li><Link href="/form-check" className="text-gray-400 hover:text-octagon-red transition-colors">Form Check</Link></li>
+                            <li><Link href="/dashboard" className="text-gray-400 hover:text-octagon-red transition-colors">Dashboard</Link></li>
                         </ul>
                     </div>
                 </div>

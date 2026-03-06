@@ -45,6 +45,7 @@ export default function GearPage() {
     const [search, setSearch] = useState("");
     const [cart, setCart] = useState<CartItem[]>([]);
     const [addedToCart, setAddedToCart] = useState<string | null>(null);
+    const [cartLoaded, setCartLoaded] = useState(false);
 
     // Load cart from localStorage
     useEffect(() => {
@@ -52,20 +53,21 @@ export default function GearPage() {
         if (saved) {
             try { setCart(JSON.parse(saved)); } catch {}
         }
+        setCartLoaded(true);
     }, []);
 
-    // Save cart to localStorage
+    // Save cart to localStorage (only after initial load)
     useEffect(() => {
-        localStorage.setItem("octagon_cart", JSON.stringify(cart));
-    }, [cart]);
+        if (cartLoaded) {
+            localStorage.setItem("octagon_cart", JSON.stringify(cart));
+        }
+    }, [cart, cartLoaded]);
 
     // Fetch products
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // Try to seed first
-                await gearApi.seedProducts();
                 const res = await gearApi.getProducts({
                     category: category !== "all" ? category : undefined,
                     search: search || undefined,
