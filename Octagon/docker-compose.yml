@@ -1,0 +1,77 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: octagon-oracle-mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      MONGO_INITDB_DATABASE: octagon-oracle
+    networks:
+      - octagon-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: octagon-oracle-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-5001}:5001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 5001
+      MONGODB_URI: mongodb://mongodb:27017/octagon-oracle
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - octagon-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5001/api}
+    container_name: octagon-oracle-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5001/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - octagon-network
+
+networks:
+  octagon-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

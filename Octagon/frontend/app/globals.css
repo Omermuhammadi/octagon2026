@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-octagon-black: #0a0a0a;
+  --color-octagon-dark: #121212;
+  --color-octagon-red: #D20A0A;
+  --color-octagon-gold: #C5B358;
+  --color-octagon-gray: #F5F5F5;
+  --color-octagon-silver: #A0A0A0;
+
+  --font-sans: var(--font-inter), sans-serif;
+  --font-heading: var(--font-outfit), sans-serif;
+  --font-display: var(--font-outfit), sans-serif;
+}
+
+:root {
+  --foreground-rgb: 245, 245, 245;
+  --background-start-rgb: 10, 10, 10;
+  --background-end-rgb: 18, 18, 18;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: var(--color-octagon-black);
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility glass-panel {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+}
+
+@utility neon-text {
+  text-shadow: 0 0 20px rgba(210, 10, 10, 0.6);
+}
+
+@utility skew-button {
+  clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+@utility skew-button-reverse {
+  clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%);
+}
+
+@utility text-outline {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+  color: transparent;
+}
+
+@utility text-outline-red {
+  -webkit-text-stroke: 1px rgba(210, 10, 10, 0.5);
+  color: transparent;
+}
+
+/* Octagon-shaped design elements */
+@utility octagon-clip {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+/* Octagon badge variant */
+.octagon-badge {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
+}
+
+/* Octagon avatar */
+.octagon-avatar {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+/* Focus visible styles for accessibility */
+@utility focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-octagon-red focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+}
