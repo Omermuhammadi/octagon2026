@@ -37,16 +37,29 @@ app.use(
   })
 );
 
-// Rate limiting
+// Rate limiting — general API
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 300, // 300 requests per window
   message: {
     success: false,
     message: 'Too many requests, please try again later.',
   },
 });
 app.use('/api', limiter);
+
+// Stricter rate limit for auth endpoints to prevent brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts, please try again later.',
+  },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
 
 // Body parser
 app.use(express.json({ limit: '10kb' }));
@@ -94,9 +107,9 @@ const startServer = async () => {
   try {
     // Connect to MongoDB first
     await connectDB();
-    
+
     // Then start the server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`
 🥊 Octagon Oracle API Server
 ============================
@@ -107,6 +120,19 @@ Frontend URL: ${config.frontendUrl}
 ============================
       `);
     });
+
+    // Graceful shutdown
+    const shutdown = (signal: string) => {
+      console.log(`\n${signal} received. Shutting down gracefully...`);
+      server.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0);
+      });
+      // Force exit after 10s if still hanging
+      setTimeout(() => process.exit(1), 10000);
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

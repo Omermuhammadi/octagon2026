@@ -130,14 +130,21 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
 
   const predictedMethod = methods[0].method;
 
-  // Predict round
+  // Predict round deterministically based on fighter stats
   let predictedRound = 3;
   if (predictedMethod === 'Decision') {
     predictedRound = 3;
-  } else if (winProb > 0.7) {
-    predictedRound = Math.random() > 0.5 ? 1 : 2;
   } else {
-    predictedRound = Math.random() > 0.5 ? 2 : 3;
+    // Use finish rate and dominance to estimate round
+    const winnerStats = prob1 >= 0.5 ? fighter1 : fighter2;
+    const finishPower = winnerStats.slpm + winnerStats.submissionAvg * 2;
+    if (winProb > 0.75 && finishPower > 6) {
+      predictedRound = 1;
+    } else if (winProb > 0.65 || finishPower > 5) {
+      predictedRound = 2;
+    } else {
+      predictedRound = 3;
+    }
   }
 
   // Confidence is based on how far from 50% the prediction is

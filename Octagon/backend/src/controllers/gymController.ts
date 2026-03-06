@@ -4,7 +4,7 @@ import { Gym } from '../models';
 // GET /api/gyms - Get gyms with filters
 export const getGyms = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { city, discipline, search, sort } = req.query;
+    const { city, discipline, search, sort, priceRange } = req.query;
     const filter: Record<string, any> = {};
 
     if (city && city !== 'All Cities') {
@@ -15,11 +15,16 @@ export const getGyms = async (req: Request, res: Response): Promise<void> => {
       filter.disciplines = discipline as string;
     }
 
+    if (priceRange && priceRange !== 'All') {
+      filter.priceRange = { $regex: priceRange as string, $options: 'i' };
+    }
+
     if (search) {
       filter.$or = [
         { name: { $regex: search as string, $options: 'i' } },
         { area: { $regex: search as string, $options: 'i' } },
         { city: { $regex: search as string, $options: 'i' } },
+        { description: { $regex: search as string, $options: 'i' } },
       ];
     }
 

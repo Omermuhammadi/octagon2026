@@ -56,6 +56,13 @@ export default function PredictionPage() {
         }
     }, [authLoading, isAuthenticated, router]);
 
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClick = () => { setShowF1Dropdown(false); setShowF2Dropdown(false); };
+        document.addEventListener("click", handleClick);
+        return () => document.removeEventListener("click", handleClick);
+    }, []);
+
     // Fighter search debounce
     const searchFighters = useCallback(async (query: string, setter: (opts: FighterOption[]) => void) => {
         if (query.length < 2) { setter([]); return; }
@@ -130,7 +137,7 @@ export default function PredictionPage() {
                     className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-10"
                 >
                     {/* Fighter 1 */}
-                    <div className="md:col-span-2 relative">
+                    <div className="md:col-span-2 relative" onClick={(e) => e.stopPropagation()}>
                         <label className="block text-sm font-medium text-neutral-400 uppercase tracking-wider mb-2">Fighter 1</label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
@@ -171,7 +178,7 @@ export default function PredictionPage() {
                     </div>
 
                     {/* Fighter 2 */}
-                    <div className="md:col-span-2 relative">
+                    <div className="md:col-span-2 relative" onClick={(e) => e.stopPropagation()}>
                         <label className="block text-sm font-medium text-neutral-400 uppercase tracking-wider mb-2">Fighter 2</label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />

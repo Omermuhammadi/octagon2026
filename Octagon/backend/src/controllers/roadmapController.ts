@@ -26,7 +26,7 @@ export const saveRoadmapProgress = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    const { roadmapId, discipline, ageGroup, completedTasks, currentWeek } = req.body;
+    const { roadmapId, discipline, ageGroup, completedTasks, currentWeek, totalWeeks } = req.body;
 
     if (!roadmapId || !discipline) {
       res.status(400).json({ success: false, message: 'roadmapId and discipline are required' });
@@ -42,6 +42,7 @@ export const saveRoadmapProgress = async (req: AuthRequest, res: Response): Prom
         ageGroup: ageGroup || '15-25',
         completedTasks: completedTasks || [],
         currentWeek: currentWeek || 1,
+        totalWeeks: totalWeeks || 4,
       },
       { upsert: true, new: true, runValidators: true }
     );

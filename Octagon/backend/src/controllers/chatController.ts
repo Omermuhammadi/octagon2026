@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ChatLog, Fighter, Gym, Product } from '../models';
+import { ChatLog, Fighter, Gym, Product, Event } from '../models';
 import { AuthRequest } from '../middleware';
 
 // ============================================
@@ -326,6 +326,38 @@ async function retrieveProductInfo(message: string): Promise<string | null> {
   return null;
 }
 
+async function retrieveEventInfo(message: string): Promise<string | null> {
+  const lower = message.toLowerCase();
+  const eventKeywords = ['event', 'card', 'ufc', 'fight night', 'ppv', 'upcoming', 'next fight', 'when is', 'schedule'];
+
+  if (eventKeywords.some(k => lower.includes(k))) {
+    const [upcoming, recent] = await Promise.all([
+      Event.find({ status: 'upcoming' }).sort({ date: 1 }).limit(3).lean(),
+      Event.find({ status: 'completed' }).sort({ date: -1 }).limit(2).lean(),
+    ]);
+
+    const parts: string[] = [];
+
+    if (upcoming.length > 0) {
+      const upcomingList = upcoming.map(e =>
+        `- **${e.name}** — ${new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (${e.location})`
+      ).join('\n');
+      parts.push(`Upcoming events:\n${upcomingList}`);
+    }
+
+    if (recent.length > 0) {
+      const recentList = recent.map(e =>
+        `- **${e.name}** — ${new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (${e.location})`
+      ).join('\n');
+      parts.push(`Recent events:\n${recentList}`);
+    }
+
+    return parts.length > 0 ? parts.join('\n\n') : null;
+  }
+
+  return null;
+}
+
 // ============================================
 // RETRIEVAL CONTEXT GATHERER
 // ============================================
@@ -333,10 +365,11 @@ async function retrieveProductInfo(message: string): Promise<string | null> {
 async function gatherRetrievalContext(message: string): Promise<string> {
   const contextParts: string[] = [];
 
-  const [fighterData, gymData, productData] = await Promise.all([
+  const [fighterData, gymData, productData, eventData] = await Promise.all([
     retrieveFighterInfo(message),
     retrieveGymInfo(message),
     retrieveProductInfo(message),
+    retrieveEventInfo(message),
   ]);
 
   if (fighterData) {
@@ -347,6 +380,9 @@ async function gatherRetrievalContext(message: string): Promise<string> {
   }
   if (productData) {
     contextParts.push(`[PRODUCT DATA FROM DATABASE]\n${productData}`);
+  }
+  if (eventData) {
+    contextParts.push(`[EVENT DATA FROM DATABASE]\n${eventData}`);
   }
 
   return contextParts.length > 0

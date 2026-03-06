@@ -2,10 +2,10 @@ import { Request, Response } from 'express';
 import { Product, Order } from '../models';
 import { AuthRequest } from '../middleware';
 
-// GET /api/gear - Get products with filters
+// GET /api/gear - Get products with filters and pagination
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { category, search, sort, featured } = req.query;
+    const { category, search, sort, featured, page, limit: limitParam } = req.query;
     const filter: Record<string, any> = {};
 
     if (category && category !== 'all') {
@@ -13,7 +13,10 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     }
 
     if (search) {
-      filter.name = { $regex: search as string, $options: 'i' };
+      filter.$or = [
+        { name: { $regex: search as string, $options: 'i' } },
+        { description: { $regex: search as string, $options: 'i' } },
+      ];
     }
 
     if (featured === 'true') {
@@ -26,8 +29,21 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     else if (sort === 'rating') sortOption = { rating: -1 };
     else if (sort === 'newest') sortOption = { createdAt: -1 };
 
-    const products = await Product.find(filter).sort(sortOption).lean();
-    res.json({ success: true, data: products, count: products.length });
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(limitParam as string) || 50));
+    const skip = (pageNum - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find(filter).sort(sortOption).skip(skip).limit(limit).lean(),
+      Product.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      data: products,
+      count: products.length,
+      pagination: { page: pageNum, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error('Get products error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -64,18 +80,25 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Validate products and calculate total
+    // Validate products and calculate total — use atomic stock decrement
     let total = 0;
     const orderItems = [];
 
     for (const item of items) {
-      const product = await Product.findById(item.productId);
+      // Atomically decrement stock — only succeeds if enough stock exists
+      const product = await Product.findOneAndUpdate(
+        { _id: item.productId, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
       if (!product) {
-        res.status(404).json({ success: false, message: `Product not found: ${item.productId}` });
-        return;
-      }
-      if (product.stock < item.quantity) {
-        res.status(400).json({ success: false, message: `Insufficient stock for ${product.name}` });
+        // Check if product exists at all vs out of stock
+        const exists = await Product.findById(item.productId);
+        if (!exists) {
+          res.status(404).json({ success: false, message: `Product not found: ${item.productId}` });
+        } else {
+          res.status(400).json({ success: false, message: `Insufficient stock for ${exists.name} (${exists.stock} available)` });
+        }
         return;
       }
       total += product.price * item.quantity;
@@ -93,13 +116,6 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       total,
       shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
     });
-
-    // Decrement stock
-    for (const item of items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity },
-      });
-    }
 
     res.status(201).json({ success: true, data: order, message: 'Order created' });
   } catch (error) {

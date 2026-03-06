@@ -88,9 +88,26 @@ export const createPrediction = async (req: AuthRequest, res: Response): Promise
     res.json({
       success: true,
       data: {
-        fighter1: { name: f1.name, record: `${f1.wins}-${f1.losses}-${f1.draws}` },
-        fighter2: { name: f2.name, record: `${f2.wins}-${f2.losses}-${f2.draws}` },
-        prediction: result,
+        fighter1: {
+          name: f1.name,
+          record: `${f1.wins}-${f1.losses}-${f1.draws}`,
+          probability: Math.round((result.winner === f1.name ? result.winnerProbability : result.loserProbability) * 100),
+        },
+        fighter2: {
+          name: f2.name,
+          record: `${f2.wins}-${f2.losses}-${f2.draws}`,
+          probability: Math.round((result.winner === f2.name ? result.winnerProbability : result.loserProbability) * 100),
+        },
+        prediction: {
+          winner: result.winner,
+          loser: result.loser,
+          method: result.predictedMethod,
+          methodProbabilities: result.methodProbabilities,
+          round: result.predictedRound,
+          confidence: result.confidence,
+          factors: result.topFactors.map(f => f.description),
+          topFactors: result.topFactors,
+        },
       },
     });
   } catch (error: any) {

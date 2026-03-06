@@ -22,26 +22,20 @@ export const getUserStats = async (req: AuthRequest, res: Response): Promise<voi
       chatSessionCount,
       recentPredictions,
       recentFormSessions,
+      recentOrders,
     ] = await Promise.all([
-      // Total predictions made
       Prediction.countDocuments({ userId }),
-      // Predictions with high confidence (>70%) - used as accuracy proxy
       Prediction.countDocuments({ userId, confidence: { $gte: 70 } }),
-      // All roadmap progress records
       RoadmapProgress.find({ userId }).lean(),
-      // All form check sessions
       FormSession.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
-      // Total orders
       Order.countDocuments({ userId }),
-      // Chat sessions
       ChatLog.countDocuments({ userId }),
-      // Recent predictions for activity feed
       Prediction.find({ userId }).sort({ createdAt: -1 }).limit(5).lean(),
-      // Recent form sessions for activity feed
       FormSession.find({ userId }).sort({ createdAt: -1 }).limit(5).lean(),
+      Order.find({ userId }).sort({ createdAt: -1 }).limit(5).lean(),
     ]);
 
-    // Calculate accuracy rate
+    // Average confidence of predictions (% of predictions with >70% model confidence)
     const accuracyRate = predictionCount > 0
       ? Math.round((highConfidencePredictions / predictionCount) * 100)
       : 0;
@@ -62,14 +56,15 @@ export const getUserStats = async (req: AuthRequest, res: Response): Promise<voi
       ? Math.round(formSessions.reduce((sum, fs) => sum + fs.overallScore, 0) / formSessions.length)
       : 0;
 
-    // Build recent activity feed
-    const recentActivity: { type: string; description: string; date: string }[] = [];
+    // Build recent activity feed (includes predictions, form checks, and orders)
+    const recentActivity: { type: string; description: string; date: string; icon?: string }[] = [];
 
     for (const p of recentPredictions) {
       recentActivity.push({
         type: 'prediction',
         description: `Predicted ${p.predictedWinner} wins ${p.fighter1Name} vs ${p.fighter2Name}`,
         date: (p.createdAt || new Date()).toISOString(),
+        icon: 'target',
       });
     }
 
@@ -78,6 +73,16 @@ export const getUserStats = async (req: AuthRequest, res: Response): Promise<voi
         type: 'form-check',
         description: `Form check: ${fs.technique} - ${fs.result} (${fs.overallScore}/100)`,
         date: (fs.createdAt || new Date()).toISOString(),
+        icon: 'activity',
+      });
+    }
+
+    for (const order of recentOrders) {
+      recentActivity.push({
+        type: 'order',
+        description: `Ordered ${order.items?.length || 0} item(s) — Rs. ${order.total?.toLocaleString() || 0}`,
+        date: (order.createdAt || new Date()).toISOString(),
+        icon: 'shopping-bag',
       });
     }
 
@@ -86,13 +91,14 @@ export const getUserStats = async (req: AuthRequest, res: Response): Promise<voi
 
     // Roadmap summary
     const roadmapSummary = roadmapProgress.map(rp => ({
+      roadmapId: rp.roadmapId,
       discipline: rp.discipline,
       ageGroup: rp.ageGroup,
       completedTasks: rp.completedTasks?.length || 0,
       currentWeek: rp.currentWeek,
-      totalWeeks: rp.totalWeeks,
-      progress: rp.totalWeeks > 0
-        ? Math.round((rp.currentWeek / rp.totalWeeks) * 100) : 0,
+      totalWeeks: rp.totalWeeks || 4,
+      progress: (rp.totalWeeks || 4) > 0
+        ? Math.round((rp.currentWeek / (rp.totalWeeks || 4)) * 100) : 0,
     }));
 
     // Update user stats in DB for persistence

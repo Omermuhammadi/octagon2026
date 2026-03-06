@@ -48,28 +48,45 @@ async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
   const config: RequestInit = {
     method,
     headers,
     credentials: 'include',
+    signal: controller.signal,
   };
 
   if (body && method !== 'GET') {
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  const data: ApiResponse<T> = await response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    clearTimeout(timeoutId);
+    const data: ApiResponse<T> = await response.json();
 
-  if (!response.ok) {
-    throw new ApiError(
-      data.message || 'An error occurred',
-      response.status,
-      data.errors
-    );
+    if (!response.ok) {
+      throw new ApiError(
+        data.message || 'An error occurred',
+        response.status,
+        data.errors
+      );
+    }
+
+    return data;
+  } catch (error: unknown) {
+    clearTimeout(timeoutId);
+    if (error instanceof ApiError) throw error;
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError('Request timed out. Please check your connection.', 408);
+    }
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new ApiError('Unable to connect to server. Please try again later.', 0);
+    }
+    throw error;
   }
-
-  return data;
 }
 
 // Auth API functions
