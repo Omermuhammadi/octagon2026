@@ -8,6 +8,7 @@ export interface IRoadmapProgress extends Document {
   completedTasks: string[];
   currentWeek: number;
   totalWeeks: number;
+  unlockedWeeks: number[];
   startedAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +21,7 @@ const roadmapProgressSchema = new Schema<IRoadmapProgress>({
   completedTasks: [{ type: String }],
   currentWeek: { type: Number, default: 1 },
   totalWeeks: { type: Number, default: 4 },
+  unlockedWeeks: { type: [Number], default: [1] },
   startedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

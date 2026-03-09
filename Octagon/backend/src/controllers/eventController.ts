@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
 import { Event, FightStats } from '../models';
+import { AuthRequest } from '../middleware';
+import { syncEvents as syncFromSportsDb, fetchEventResults } from '../services/sportsDbService';
+
+// Escape user input for safe use in $regex (prevents ReDoS)
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Get all events with pagination
 export const getEvents = async (req: Request, res: Response): Promise<void> => {
@@ -124,8 +131,8 @@ export const searchEvents = async (req: Request, res: Response): Promise<void> =
 
     const events = await Event.find({
       $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { location: { $regex: query, $options: 'i' } },
+        { name: { $regex: escapeRegex(query), $options: 'i' } },
+        { location: { $regex: escapeRegex(query), $options: 'i' } },
       ],
     })
       .sort({ date: -1 })
@@ -147,7 +154,7 @@ export const getEventFights = async (req: Request, res: Response): Promise<void>
     // Fight IDs follow pattern: eventId_fightNumber
     // So we search for all fight stats where fightId starts with eventId
     const fightStats = await FightStats.find({
-      fightId: { $regex: `^${eventId}_`, $options: 'i' },
+      fightId: { $regex: `^${escapeRegex(eventId)}_`, $options: 'i' },
     })
       .sort({ fightId: 1, fighterPosition: 1 })
       .lean();
@@ -208,6 +215,57 @@ export const getEventStats = async (req: Request, res: Response): Promise<void> 
     });
   } catch (error) {
     console.error('Get event stats error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// POST /api/events/sync - Trigger manual sync from TheSportsDB
+export const syncEventsFromApi = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const result = await syncFromSportsDb();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Sync events error:', error);
+    res.status(500).json({ success: false, message: 'Failed to sync events' });
+  }
+};
+
+// GET /api/events/:id/fightcard - Get TheSportsDB fight card for an event
+export const getEventFightCard = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const event = await Event.findById(req.params.id).lean();
+
+    if (!event) {
+      res.status(404).json({ success: false, message: 'Event not found' });
+      return;
+    }
+
+    // If we have fights cached, return them
+    if (event.fights && event.fights.length > 0) {
+      res.json({ success: true, data: event.fights, source: 'cached' });
+      return;
+    }
+
+    // If the event has a sportsDbId and is completed, try fetching results live
+    if (event.sportsDbId && event.status === 'completed') {
+      try {
+        const results = await fetchEventResults(event.sportsDbId);
+        if (results.length > 0) {
+          // Parse and cache
+          const { parseResultsToFights } = await import('../services/sportsDbService');
+          const fights = parseResultsToFights(results);
+          await Event.findByIdAndUpdate(event._id, { fights, lastSynced: new Date() });
+          res.json({ success: true, data: fights, source: 'live' });
+          return;
+        }
+      } catch {
+        // Fall through to empty response
+      }
+    }
+
+    res.json({ success: true, data: [], source: 'none' });
+  } catch (error) {
+    console.error('Get event fight card error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

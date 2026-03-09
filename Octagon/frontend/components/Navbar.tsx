@@ -64,6 +64,8 @@ export function Navbar() {
         if (user.role === "coach") {
             return [
                 { label: "DASHBOARD", href: "/dashboard/coach" },
+                { label: "STRATEGY", href: "/strategy" },
+                { label: "EVENTS", href: "/events" },
                 { label: "COMPARISON", href: "/comparison" },
                 { label: "TRAINING", href: "/training" },
                 { label: "GYMS", href: "/gyms" },
@@ -73,6 +75,7 @@ export function Navbar() {
             // Covers fan, fighter, and beginner roles
             return [
                 { label: "DASHBOARD", href: "/dashboard/fan" },
+                { label: "EVENTS", href: "/events" },
                 { label: "PREDICTIONS", href: "/prediction" },
                 { label: "FORM CHECK", href: "/form-check" },
                 { label: "COMPARISON", href: "/comparison" },

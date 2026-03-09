@@ -18,15 +18,17 @@ const SYSTEM_PROMPT = `You are Oracle AI, the intelligent MMA assistant for the 
 
 1. **Fight Predictions** - AI-powered winner predictions using our ML model trained on 8,400+ real fights
 2. **Fighter Stats & Comparison** - Database of 4,400+ UFC fighters with detailed stats
-3. **Training Roadmaps** - Structured BJJ, Wrestling, MMA plans by age group (under-15, 15-25, 25+)
-4. **Gym Finder** - Find martial arts gyms across Pakistan (Karachi, Lahore, Islamabad, etc.)
-5. **Form Correction** - Upload training videos for AI pose analysis using MediaPipe
-6. **Gear Store** - Browse and buy MMA training equipment
-7. **Self-Defense Guide** - 25+ real-world scenarios with a dedicated women's safety section
+3. **UFC Event Tracking** - Upcoming and past UFC events with full fight cards, results, venues, and main event details (auto-synced from TheSportsDB)
+4. **Training Roadmaps** - Structured BJJ, Wrestling, MMA plans by age group (under-15, 15-25, 25+)
+5. **Gym Finder** - Find martial arts gyms across Pakistan (Karachi, Lahore, Islamabad, etc.)
+6. **Form Correction** - Upload training videos for AI pose analysis using MediaPipe
+7. **Gear Store** - Browse and buy MMA training equipment
+8. **Self-Defense Guide** - 25+ real-world scenarios with a dedicated women's safety section
 
 Platform pages for navigation:
 - /prediction - Fight predictions
 - /comparison - Fighter comparison with strategy suggestions
+- /events - UFC event tracker (upcoming events, completed results, fight cards)
 - /training - Training roadmaps
 - /gyms - Gym finder with map
 - /form-check - AI form analysis (video upload)
@@ -37,7 +39,8 @@ Platform pages for navigation:
 Rules:
 - Stay focused on MMA, martial arts, combat sports, fitness, and self-defense topics
 - Be friendly, knowledgeable, and concise
-- When you have retrieved data (fighter stats, gym info, product info), incorporate it naturally into your response
+- When you have retrieved data (fighter stats, gym info, product info, event data), incorporate it naturally into your response
+- When sharing event info, include fight card details (main event fighters, winners) when available
 - Suggest relevant platform pages when appropriate using the format: [Page Name](/route)
 - NEVER discuss weapons manufacturing, illegal activities, gambling/betting, steroids/doping, or harmful content
 - If asked about inappropriate topics, politely redirect to MMA training and safety
@@ -168,6 +171,12 @@ const knowledgeBase: KnowledgeEntry[] = [
     answer: 'As a coach, you can use our platform to:\n1. Analyze opponent weaknesses with Fighter Comparison\n2. Get AI strategy suggestions for matchups\n3. Create training plans using roadmaps\n4. Analyze fighter form with video upload',
     links: [{ label: 'Comparison', url: '/comparison' }, { label: 'Predictions', url: '/prediction' }],
     weight: 0.9,
+  },
+  {
+    keywords: ['event', 'card', 'fight night', 'ppv', 'upcoming', 'next fight', 'when is', 'schedule', 'result', 'who won', 'main event', 'fight card'],
+    answer: 'We track upcoming and past UFC events with full fight cards, main event details, venues, and results. Events are auto-synced daily from TheSportsDB. You can browse upcoming events, see completed fight cards with winners, and search by event name.',
+    links: [{ label: 'UFC Events', url: '/events' }],
+    weight: 1.0,
   },
 ];
 
@@ -328,28 +337,57 @@ async function retrieveProductInfo(message: string): Promise<string | null> {
 
 async function retrieveEventInfo(message: string): Promise<string | null> {
   const lower = message.toLowerCase();
-  const eventKeywords = ['event', 'card', 'ufc', 'fight night', 'ppv', 'upcoming', 'next fight', 'when is', 'schedule'];
+  const eventKeywords = ['event', 'card', 'ufc', 'fight night', 'ppv', 'upcoming', 'next fight', 'when is', 'schedule', 'result', 'who won', 'main event', 'fight card'];
 
   if (eventKeywords.some(k => lower.includes(k))) {
-    const [upcoming, recent] = await Promise.all([
-      Event.find({ status: 'upcoming' }).sort({ date: 1 }).limit(3).lean(),
-      Event.find({ status: 'completed' }).sort({ date: -1 }).limit(2).lean(),
-    ]);
+    const wantsResults = /result|who won|winner|last|recent|completed/i.test(lower);
+    const wantsUpcoming = /upcoming|next|schedule|when|future/i.test(lower) || !wantsResults;
+
+    const queries: Promise<any[]>[] = [];
+    if (wantsUpcoming) {
+      queries.push(Event.find({ status: 'upcoming' }).sort({ date: 1 }).limit(3).lean());
+    } else {
+      queries.push(Promise.resolve([]));
+    }
+    if (wantsResults || !wantsUpcoming) {
+      queries.push(Event.find({ status: 'completed' }).sort({ date: -1 }).limit(3).lean());
+    } else {
+      queries.push(Promise.resolve([]));
+    }
+
+    const [upcoming, recent] = await Promise.all(queries);
 
     const parts: string[] = [];
 
+    const formatEvent = (e: any): string => {
+      const date = new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const venue = [e.venue, e.city, e.country].filter(Boolean).join(', ') || e.location;
+      let line = `- **${e.name}** — ${date} | ${venue}`;
+
+      if (e.fights && e.fights.length > 0) {
+        const mainEvent = e.fights.find((f: any) => f.position === 1) || e.fights[0];
+        line += `\n  Main Event: ${mainEvent.fighter1} vs ${mainEvent.fighter2}`;
+        if (mainEvent.winner) {
+          line += ` → Winner: **${mainEvent.winner}**`;
+        }
+        if (e.fights.length > 1) {
+          line += `\n  (${e.fights.length} total fights on card)`;
+        }
+      }
+
+      return line;
+    };
+
     if (upcoming.length > 0) {
-      const upcomingList = upcoming.map(e =>
-        `- **${e.name}** — ${new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (${e.location})`
-      ).join('\n');
-      parts.push(`Upcoming events:\n${upcomingList}`);
+      parts.push(`Upcoming UFC events:\n${upcoming.map(formatEvent).join('\n')}`);
     }
 
     if (recent.length > 0) {
-      const recentList = recent.map(e =>
-        `- **${e.name}** — ${new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (${e.location})`
-      ).join('\n');
-      parts.push(`Recent events:\n${recentList}`);
+      parts.push(`Recent completed events:\n${recent.map(formatEvent).join('\n')}`);
+    }
+
+    if (parts.length > 0) {
+      parts.push('View all events at [Events Page](/events)');
     }
 
     return parts.length > 0 ? parts.join('\n\n') : null;
@@ -483,6 +521,7 @@ async function buildFallbackResponse(
       text: "Hey! I'm Oracle AI, your MMA assistant. I can help you with:\n\n" +
         "- **Fight Predictions** - AI-powered winner predictions\n" +
         "- **Fighter Comparison** - Head-to-head stats and strategy\n" +
+        "- **UFC Events** - Upcoming events, fight cards, and results\n" +
         "- **Training Roadmaps** - Structured plans by age group\n" +
         "- **Gym Finder** - Find gyms near you in Pakistan\n" +
         "- **Form Analysis** - AI pose feedback on your technique\n" +

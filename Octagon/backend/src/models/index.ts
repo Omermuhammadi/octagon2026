@@ -9,3 +9,6 @@ export { Gym, IGym } from './Gym';
 export { Product, IProduct } from './Product';
 export { Order, IOrder, IOrderItem } from './Order';
 export { ChatLog, IChatLog, IChatMessage } from './ChatLog';
+export { CoachRoster, ICoachRoster } from './CoachRoster';
+export { Strategy, IStrategy } from './Strategy';
+export { FighterTraining, IFighterTraining } from './FighterTraining';

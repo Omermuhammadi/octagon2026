@@ -430,8 +430,8 @@ export default function SelfDefensePage() {
                         <Shield className="w-4 h-4 text-red-500" />
                         <span className="text-red-400 text-sm font-medium">25+ Real-World Scenarios</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-                        Self-Defense <span className="text-red-500">Guide</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
+                        SELF-DEFENSE <span className="text-octagon-red">GUIDE</span>
                     </h1>
                     <p className="text-neutral-400 max-w-2xl mx-auto text-lg">
                         Learn how to protect yourself in any situation. Browse scenarios, get expert advice, and chat with our AI assistant.

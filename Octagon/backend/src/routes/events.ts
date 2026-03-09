@@ -8,7 +8,10 @@ import {
   searchEvents,
   getEventFights,
   getEventStats,
+  syncEventsFromApi,
+  getEventFightCard,
 } from '../controllers/eventController';
+import { protect } from '../middleware';
 
 const router = Router();
 
@@ -27,13 +30,19 @@ router.get('/search', searchEvents);
 // GET /api/events/stats - Get event statistics summary
 router.get('/stats', getEventStats);
 
+// POST /api/events/sync - Trigger manual sync from TheSportsDB (requires auth)
+router.post('/sync', protect, syncEventsFromApi);
+
 // GET /api/events/event/:eventId - Get event by eventId (from CSV)
 router.get('/event/:eventId', getEventByEventId);
 
 // GET /api/events/:id - Get event by MongoDB ID
 router.get('/:id', getEventById);
 
-// GET /api/events/:eventId/fights - Get fights for an event
+// GET /api/events/:id/fightcard - Get fight card for an event
+router.get('/:id/fightcard', getEventFightCard);
+
+// GET /api/events/:eventId/fights - Get fights for an event (from fight stats CSV)
 router.get('/:eventId/fights', getEventFights);
 
 export default router;

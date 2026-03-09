@@ -297,8 +297,8 @@ export default function FormCheckPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-                        Form <span className="text-red-500">Analysis</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
+                        FORM <span className="text-octagon-red">ANALYSIS</span>
                     </h1>
                     <p className="text-neutral-400 max-w-xl mx-auto text-lg">
                         Upload your training video for AI-powered pose analysis and technique feedback

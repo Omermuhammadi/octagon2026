@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { connectDB } from './config/database';
 import routes from './routes';
+import { syncEvents } from './services/sportsDbService';
 
 // Initialize express app
 const app: Application = express();
@@ -119,6 +120,14 @@ MongoDB: ${config.mongodbUri}
 Frontend URL: ${config.frontendUrl}
 ============================
       `);
+
+      // Non-blocking: sync UFC events from TheSportsDB on startup
+      syncEvents().catch((err) => console.error('[SportsDB] Startup sync failed:', err));
+
+      // Re-sync every 24 hours
+      setInterval(() => {
+        syncEvents().catch((err) => console.error('[SportsDB] Scheduled sync failed:', err));
+      }, 24 * 60 * 60 * 1000);
     });
 
     // Graceful shutdown

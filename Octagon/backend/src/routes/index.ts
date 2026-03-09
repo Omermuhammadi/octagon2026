@@ -9,6 +9,9 @@ import formCheckRoutes from './formCheck';
 import gearRoutes from './gear';
 import chatRoutes from './chat';
 import statsRoutes from './stats';
+import strategyRoutes from './strategy';
+import coachRosterRoutes from './coachRoster';
+import fighterTrainingRoutes from './fighterTraining';
 
 const router = Router();
 
@@ -32,5 +35,8 @@ router.use('/form-check', formCheckRoutes);
 router.use('/gear', gearRoutes);
 router.use('/chat', chatRoutes);
 router.use('/stats', statsRoutes);
+router.use('/strategy', strategyRoutes);
+router.use('/coach/roster', coachRosterRoutes);
+router.use('/coach/fighter-training', fighterTrainingRoutes);
 
 export default router;

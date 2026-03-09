@@ -124,8 +124,8 @@ export default function PredictionPage() {
 
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-                        Fight <span className="text-red-500">Predictions</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
+                        FIGHT <span className="text-octagon-red">PREDICTIONS</span>
                     </h1>
                     <p className="text-neutral-400 max-w-xl mx-auto text-lg">
                         AI-powered predictions using statistical analysis of 4,400+ UFC fighters

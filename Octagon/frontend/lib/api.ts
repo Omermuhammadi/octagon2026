@@ -273,6 +273,23 @@ export interface Event {
   date: string;
   location: string;
   status: 'upcoming' | 'completed';
+  sportsDbId?: string | null;
+  venue?: string;
+  city?: string;
+  country?: string;
+  poster?: string;
+  thumb?: string;
+  fights?: EventFight[];
+  lastSynced?: string | null;
+}
+
+export interface EventFight {
+  position: number;
+  fighter1: string;
+  fighter2: string;
+  winner: string | null;
+  fighter1Detail: string | null;
+  fighter2Detail: string | null;
 }
 
 export interface EventStats {
@@ -311,6 +328,12 @@ export const eventApi = {
 
   getEventFights: (eventId: string) =>
     apiRequest<Array<{ fightId: string; fighters: FightStats[] }>>(`/events/${eventId}/fights`),
+
+  syncEvents: (token: string) =>
+    apiRequest('/events/sync', { method: 'POST', token }),
+
+  getEventFightCard: (id: string) =>
+    apiRequest<EventFight[]>(`/events/${id}/fightcard`),
 };
 
 // Prediction types
@@ -371,6 +394,7 @@ export interface RoadmapProgressData {
   completedTasks: string[];
   currentWeek: number;
   totalWeeks: number;
+  unlockedWeeks: number[];
 }
 
 // Roadmap API
@@ -381,8 +405,21 @@ export const roadmapApi = {
   getProgress: (token: string) =>
     apiRequest<RoadmapProgressData[]>('/roadmaps/progress', { token }),
 
-  saveProgress: (data: { roadmapId: string; discipline: string; ageGroup: string; completedTasks: string[]; currentWeek: number }, token: string) =>
+  saveProgress: (data: { roadmapId: string; discipline: string; ageGroup: string; completedTasks: string[]; currentWeek: number; unlockedWeeks: number[] }, token: string) =>
     apiRequest<RoadmapProgressData>('/roadmaps/progress', {
+      method: 'POST',
+      body: data,
+      token,
+    }),
+
+  canUnlockWeek: (roadmapId: string, weekNumber: number, token: string) =>
+    apiRequest<{ unlocked: boolean; completedPrevious: number; requiredPrevious: number }>(
+      `/roadmaps/progress/${encodeURIComponent(roadmapId)}/can-unlock/${weekNumber}`,
+      { token }
+    ),
+
+  validateTaskToggle: (data: { roadmapId: string; taskId: string; tasksPerWeek?: number }, token: string) =>
+    apiRequest<{ allowed: boolean; reason?: string }>('/roadmaps/progress/validate', {
       method: 'POST',
       body: data,
       token,
@@ -551,6 +588,224 @@ export interface UserStats {
 export const statsApi = {
   getUserStats: (token: string) =>
     apiRequest<UserStats>('/stats', { token }),
+};
+
+// ============================================
+// Strategy Types
+// ============================================
+
+export interface StrategyRating {
+  category: string;
+  rating: 'HIGH' | 'MEDIUM' | 'LOW';
+  detail: string;
+}
+
+export interface RoundStrategy {
+  round: number;
+  approach: 'aggressive' | 'patient' | 'defensive';
+  tactics: string[];
+  riskLevel: 'high' | 'medium' | 'low';
+  notes: string;
+}
+
+export interface RangeData {
+  fighter1Score: number;
+  fighter2Score: number;
+  recommendation: string;
+}
+
+export interface StrikeZone {
+  opponentDefense: number;
+  recommendation: string;
+  priority: 'primary' | 'secondary' | 'low';
+}
+
+export interface DangerZone {
+  threat: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  detail: string;
+}
+
+export interface CornerRound {
+  round: number;
+  advice: string[];
+}
+
+export interface StrategyResult {
+  strategyId: string;
+  fighter1: { name: string; record: string; height: string; reach: number | null; stance: string };
+  fighter2: { name: string; record: string; height: string; reach: number | null; stance: string };
+  prediction: {
+    winner: string;
+    loser: string;
+    winnerProbability: number;
+    loserProbability: number;
+    predictedMethod: string;
+    methodProbabilities: { method: string; probability: number }[];
+    predictedRound: number;
+    confidence: number;
+    topFactors: { factor: string; description: string; impact: string }[];
+  };
+  strengthsWeaknesses: {
+    fighter1: StrategyRating[];
+    fighter2: StrategyRating[];
+  };
+  roundStrategy: RoundStrategy[];
+  rangeAnalysis: {
+    distance: RangeData;
+    clinch: RangeData;
+    ground: RangeData;
+    bestRange: string;
+  };
+  strikeTargeting: {
+    head: StrikeZone;
+    body: StrikeZone;
+    legs: StrikeZone;
+    primaryTarget: string;
+  };
+  takedownPlan: {
+    yourTdAccuracy: number;
+    opponentTdDefense: number;
+    opponentTdAccuracy: number;
+    yourTdDefense: number;
+    verdict: 'shoot' | 'stuff' | 'neutral';
+    details: string;
+  };
+  dangerZones: DangerZone[];
+  cornerAdvice: CornerRound[];
+  fightStatsAvailable: { fighter1: number; fighter2: number };
+}
+
+export interface StrategyHistoryItem {
+  _id: string;
+  fighter1Name: string;
+  fighter2Name: string;
+  prediction: {
+    winner: string;
+    winProbability: number;
+    method: string;
+  };
+  createdAt: string;
+}
+
+export interface SavedStrategy extends StrategyResult {
+  _id: string;
+  coachId: string;
+  fighter1Name: string;
+  fighter2Name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Strategy API
+export const strategyApi = {
+  generate: (fighter1Name: string, fighter2Name: string, token: string) =>
+    apiRequest<StrategyResult>('/strategy/generate', {
+      method: 'POST',
+      body: { fighter1Name, fighter2Name },
+      token,
+    }),
+
+  getHistory: (token: string, limit = 20) =>
+    apiRequest<StrategyHistoryItem[]>(`/strategy/history?limit=${limit}`, { token }),
+
+  getById: (id: string, token: string) =>
+    apiRequest<SavedStrategy>(`/strategy/${id}`, { token }),
+
+  delete: (id: string, token: string) =>
+    apiRequest(`/strategy/${id}`, { method: 'DELETE', token }),
+};
+
+// ============================================
+// Coach Roster Types
+// ============================================
+
+export interface RosterFighter {
+  _id: string;
+  fighterId: string;
+  fighterName: string;
+  notes: string;
+  addedAt: string;
+  record: string;
+  stance: string;
+  height: string;
+}
+
+export interface UpcomingFight {
+  fighterName: string;
+  opponent: string;
+  eventName: string;
+  eventDate: string;
+  eventId: string;
+}
+
+export interface CoachStats {
+  strategiesGenerated: number;
+  avgConfidence: number;
+}
+
+// Coach Roster API
+export const coachRosterApi = {
+  getRoster: (token: string) =>
+    apiRequest<RosterFighter[]>('/coach/roster', { token }),
+
+  addFighter: (fighterName: string, token: string, notes?: string) =>
+    apiRequest<RosterFighter>('/coach/roster', {
+      method: 'POST',
+      body: { fighterName, notes },
+      token,
+    }),
+
+  removeFighter: (fighterId: string, token: string) =>
+    apiRequest(`/coach/roster/${fighterId}`, { method: 'DELETE', token }),
+
+  getUpcomingFights: (token: string) =>
+    apiRequest<UpcomingFight[]>('/coach/roster/upcoming', { token }),
+
+  getCoachStats: (token: string) =>
+    apiRequest<CoachStats>('/coach/roster/stats', { token }),
+};
+
+// ============================================
+// Fighter Training Types
+// ============================================
+
+export interface FighterTrainingAssignment {
+  _id: string;
+  coachId: string;
+  fighterId: string;
+  fighterName: string;
+  roadmapId: string;
+  discipline: string;
+  ageGroup: string;
+  completedTasks: string[];
+  currentWeek: number;
+  totalWeeks: number;
+  unlockedWeeks: number[];
+  assignedAt: string;
+}
+
+// Fighter Training API
+export const fighterTrainingApi = {
+  getAssignments: (token: string) =>
+    apiRequest<FighterTrainingAssignment[]>('/coach/fighter-training', { token }),
+
+  assign: (data: { fighterName: string; roadmapId: string; discipline: string; ageGroup: string }, token: string) =>
+    apiRequest<FighterTrainingAssignment>('/coach/fighter-training', {
+      method: 'POST',
+      body: data,
+      token,
+    }),
+
+  updateProgress: (id: string, data: { completedTasks: string[]; currentWeek: number; unlockedWeeks: number[] }, token: string) =>
+    apiRequest<FighterTrainingAssignment>(`/coach/fighter-training/${id}`, {
+      method: 'PUT',
+      body: data,
+      token,
+    }),
+
+  delete: (id: string, token: string) =>
+    apiRequest(`/coach/fighter-training/${id}`, { method: 'DELETE', token }),
 };
 
 export { apiRequest, ApiError, API_BASE_URL };
