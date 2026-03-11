@@ -9,17 +9,18 @@ import { Card } from "@/components/ui/Card";
 import {
     MapPin, Phone, Star, Navigation, Loader2,
     Clock, Globe, ChevronDown, Search, X,
-    Dumbbell, CheckCircle, Database
+    Dumbbell, CheckCircle, Database, Map, List
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GymMap } from "@/components/gyms/GymMap";
 
 // Types
-type City = "All Cities" | "Karachi" | "Lahore" | "Islamabad" | "Rawalpindi" | "Faisalabad";
-type Discipline = "All" | "MMA" | "BJJ" | "Boxing" | "Muay Thai" | "Karate" | "Taekwondo" | "Wrestling" | "Kickboxing";
+type City = "All Cities" | "Karachi" | "Lahore" | "Islamabad" | "Rawalpindi" | "Faisalabad" | "Peshawar" | "Multan";
+type Discipline = "All" | "MMA" | "BJJ" | "Boxing" | "Muay Thai" | "Karate" | "Taekwondo" | "Wrestling" | "Kickboxing" | "Judo";
 type SortOption = "rating" | "reviews" | "name";
 
-const cities: City[] = ["All Cities", "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad"];
-const disciplines: Discipline[] = ["All", "MMA", "BJJ", "Boxing", "Muay Thai", "Karate", "Taekwondo", "Wrestling", "Kickboxing"];
+const cities: City[] = ["All Cities", "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Peshawar", "Multan"];
+const disciplines: Discipline[] = ["All", "MMA", "BJJ", "Boxing", "Muay Thai", "Karate", "Taekwondo", "Wrestling", "Kickboxing", "Judo"];
 
 export default function GymsPage() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -44,6 +45,9 @@ export default function GymsPage() {
     // Dropdown states
     const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
     const [disciplineDropdownOpen, setDisciplineDropdownOpen] = useState(false);
+
+    // View mode
+    const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -307,6 +311,28 @@ export default function GymsPage() {
                                         ))}
                                     </div>
 
+                                    {/* View Toggle */}
+                                    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                                        <button
+                                            onClick={() => setViewMode("list")}
+                                            className={`px-3 py-2 transition-all ${
+                                                viewMode === "list" ? "bg-octagon-red text-white" : "text-gray-400 hover:text-white"
+                                            }`}
+                                            title="List View"
+                                        >
+                                            <List className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode("map")}
+                                            className={`px-3 py-2 transition-all ${
+                                                viewMode === "map" ? "bg-octagon-red text-white" : "text-gray-400 hover:text-white"
+                                            }`}
+                                            title="Map View"
+                                        >
+                                            <Map className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
                                     {/* Use My Location Button */}
                                     <button
                                         onClick={handleGeolocation}
@@ -372,8 +398,17 @@ export default function GymsPage() {
                                 </div>
                             )}
 
-                            {/* Gyms Grid */}
+                            {/* Gyms Grid or Map */}
                             {!gymsLoading && !gymsError && (
+                                viewMode === "map" ? (
+                                    <div className="rounded-xl overflow-hidden border border-white/10" style={{ height: "600px" }}>
+                                        <GymMap
+                                            gyms={filteredGyms}
+                                            center={userLocation || undefined}
+                                            zoom={userLocation ? 12 : undefined}
+                                        />
+                                    </div>
+                                ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredGyms.length > 0 ? (
                                         filteredGyms.map((gym, index) => (
@@ -401,6 +436,7 @@ export default function GymsPage() {
                                         </div>
                                     )}
                                 </div>
+                                )
                             )}
             </div>
         </div>

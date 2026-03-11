@@ -1,9 +1,9 @@
 node_modules
 dist
+npm-debug.log*
 .env
-*.log
+.env.*
+*.md
 .git
 .gitignore
-README.md
-.dockerignore
-Dockerfile
+tmpclaude-*

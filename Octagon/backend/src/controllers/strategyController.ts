@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware';
-import { Fighter, FightStats, Strategy } from '../models';
+import { Fighter, FightStats, Strategy, IFightStats } from '../models';
 import { generateStrategy } from '../services/strategyEngine';
 
 function escapeRegex(str: string): string {
@@ -47,7 +47,7 @@ export const generateStrategyHandler = async (req: AuthRequest, res: Response): 
     ]);
 
     // Generate strategy
-    const strategy = await generateStrategy(f1, f2, f1Stats, f2Stats);
+    const strategy = await generateStrategy(f1, f2, f1Stats as unknown as IFightStats[], f2Stats as unknown as IFightStats[]);
 
     // Save to DB
     const saved = await Strategy.create({

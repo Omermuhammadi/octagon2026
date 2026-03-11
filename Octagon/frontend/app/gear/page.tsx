@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { gearApi, ProductData } from "@/lib/api";
+import { useCart } from "@/contexts/CartContext";
 import {
     ShoppingBag, Search, Star, Filter, ShoppingCart,
     Loader2, Package, ChevronRight, Plus, Minus, Check
@@ -29,39 +30,17 @@ const sortOptions = [
     { id: "newest", label: "Newest" },
 ];
 
-interface CartItem {
-    product: ProductData;
-    quantity: number;
-}
-
 export default function GearPage() {
     const { isAuthenticated, isLoading: authLoading } = useAuth();
     const router = useRouter();
+    const { cart, cartCount, cartTotal, addToCart: contextAddToCart } = useCart();
 
     const [products, setProducts] = useState<ProductData[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState("all");
     const [sort, setSort] = useState("featured");
     const [search, setSearch] = useState("");
-    const [cart, setCart] = useState<CartItem[]>([]);
     const [addedToCart, setAddedToCart] = useState<string | null>(null);
-    const [cartLoaded, setCartLoaded] = useState(false);
-
-    // Load cart from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem("octagon_cart");
-        if (saved) {
-            try { setCart(JSON.parse(saved)); } catch {}
-        }
-        setCartLoaded(true);
-    }, []);
-
-    // Save cart to localStorage (only after initial load)
-    useEffect(() => {
-        if (cartLoaded) {
-            localStorage.setItem("octagon_cart", JSON.stringify(cart));
-        }
-    }, [cart, cartLoaded]);
 
     // Fetch products
     useEffect(() => {
@@ -86,24 +65,11 @@ export default function GearPage() {
         return () => clearTimeout(timer);
     }, [category, sort, search]);
 
-    const addToCart = (product: ProductData) => {
-        setCart(prev => {
-            const existing = prev.find(item => item.product._id === product._id);
-            if (existing) {
-                return prev.map(item =>
-                    item.product._id === product._id
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
-            }
-            return [...prev, { product, quantity: 1 }];
-        });
+    const handleAddToCart = (product: ProductData) => {
+        contextAddToCart(product);
         setAddedToCart(product._id);
         setTimeout(() => setAddedToCart(null), 1500);
     };
-
-    const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black pt-24 pb-16">
@@ -231,7 +197,7 @@ export default function GearPage() {
 
                                     <div className="flex items-center justify-between">
                                         <span className="text-white text-xl font-bold">Rs {product.price.toLocaleString()}</span>
-                                        <button onClick={() => addToCart(product)}
+                                        <button onClick={() => handleAddToCart(product)}
                                             className={`p-2 rounded-lg transition-all ${
                                                 addedToCart === product._id
                                                     ? "bg-green-500/20 text-green-400"

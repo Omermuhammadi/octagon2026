@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Chatbot } from "@/components/Chatbot";
 import { MobileNav } from "@/components/MobileNav";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -25,13 +26,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.variable} font-sans bg-black text-white antialiased`}>
         <AuthProvider>
-          <Navbar />
-          <main className="pb-16 md:pb-0">
-            {children}
-          </main>
-          <MobileNav />
-          <Footer />
-          <Chatbot />
+          <CartProvider>
+            <Navbar />
+            <main className="pb-16 md:pb-0">
+              {children}
+            </main>
+            <MobileNav />
+            <Footer />
+            <Chatbot />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

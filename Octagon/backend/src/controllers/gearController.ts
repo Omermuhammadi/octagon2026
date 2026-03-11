@@ -1,6 +1,13 @@
 import { Request, Response } from 'express';
+import Stripe from 'stripe';
 import { Product, Order } from '../models';
 import { AuthRequest } from '../middleware';
+import { config } from '../config';
+
+// Initialize Stripe (only if key exists)
+const stripe = config.stripe.secretKey
+  ? new Stripe(config.stripe.secretKey, { apiVersion: '2024-12-18.acacia' as any })
+  : null;
 
 // Escape user input for safe use in $regex (prevents ReDoS)
 function escapeRegex(str: string): string {
@@ -36,7 +43,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     else if (sort === 'newest') sortOption = { createdAt: -1 };
 
     const pageNum = Math.max(1, parseInt(page as string) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(limitParam as string) || 50));
+    const limit = Math.min(100, Math.max(1, parseInt(limitParam as string) || 100));
     const skip = (pageNum - 1) * limit;
 
     const [products, total] = await Promise.all([
@@ -71,7 +78,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// POST /api/gear/checkout - Create order
+// POST /api/gear/checkout - Create order (direct, non-Stripe fallback)
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -144,6 +151,159 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+// POST /api/gear/create-checkout-session - Stripe Checkout Session
+export const createCheckoutSession = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    if (!stripe) {
+      res.status(503).json({ success: false, message: 'Stripe is not configured' });
+      return;
+    }
+
+    const { items, shippingAddress } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ success: false, message: 'Items are required' });
+      return;
+    }
+
+    // Validate products exist and have stock
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+    let subtotal = 0;
+
+    for (const item of items) {
+      if (!item.productId || !Number.isInteger(item.quantity) || item.quantity < 1) {
+        res.status(400).json({ success: false, message: 'Invalid item format' });
+        return;
+      }
+
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        res.status(404).json({ success: false, message: `Product not found: ${item.productId}` });
+        return;
+      }
+      if (product.stock < item.quantity) {
+        res.status(400).json({ success: false, message: `Insufficient stock for ${product.name}` });
+        return;
+      }
+
+      subtotal += product.price * item.quantity;
+      lineItems.push({
+        price_data: {
+          currency: 'pkr',
+          product_data: {
+            name: product.name,
+            description: product.description?.substring(0, 500) || undefined,
+            images: product.images?.length ? [product.images[0]] : undefined,
+          },
+          unit_amount: product.price * 100, // Stripe expects smallest currency unit (paisa)
+        },
+        quantity: item.quantity,
+      });
+    }
+
+    // Add shipping if subtotal <= Rs 5,000
+    if (subtotal <= 5000) {
+      lineItems.push({
+        price_data: {
+          currency: 'pkr',
+          product_data: { name: 'Shipping' },
+          unit_amount: 50000, // Rs 500 in paisa
+        },
+        quantity: 1,
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: `${config.frontendUrl}/gear/cart?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.frontendUrl}/gear/cart?cancelled=true`,
+      metadata: {
+        userId: req.user._id.toString(),
+        items: JSON.stringify(items),
+        shippingAddress: shippingAddress || '',
+      },
+    });
+
+    res.json({ success: true, data: { sessionId: session.id, url: session.url } });
+  } catch (error) {
+    console.error('Create checkout session error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// POST /api/gear/webhook - Stripe Webhook
+export const handleStripeWebhook = async (req: Request, res: Response): Promise<void> => {
+  if (!stripe) {
+    res.status(503).json({ success: false, message: 'Stripe is not configured' });
+    return;
+  }
+
+  const sig = req.headers['stripe-signature'] as string;
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, config.stripe.webhookSecret);
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message);
+    res.status(400).json({ success: false, message: `Webhook Error: ${err.message}` });
+    return;
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const metadata = session.metadata || {};
+
+    try {
+      const items = JSON.parse(metadata.items || '[]');
+      const userId = metadata.userId;
+
+      // Atomically decrement stock and build order items
+      const orderItems: { productId: any; name: string; price: number; quantity: number }[] = [];
+      let total = 0;
+
+      for (const item of items) {
+        const product = await Product.findOneAndUpdate(
+          { _id: item.productId, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } },
+          { new: true }
+        );
+        if (product) {
+          total += product.price * item.quantity;
+          orderItems.push({
+            productId: product._id,
+            name: product.name,
+            price: product.price,
+            quantity: item.quantity,
+          });
+        }
+      }
+
+      if (orderItems.length > 0) {
+        await Order.create({
+          userId,
+          items: orderItems,
+          total,
+          status: 'confirmed',
+          shippingAddress: metadata.shippingAddress || '',
+          stripeSessionId: session.id,
+        });
+        console.log(`[Stripe] Order created for session ${session.id}`);
+      }
+    } catch (err) {
+      console.error('[Stripe] Error processing webhook:', err);
+    }
+  }
+
+  res.json({ received: true });
+};
+
 // GET /api/gear/orders - Get user's order history
 export const getOrders = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -166,29 +326,12 @@ export const getOrders = async (req: AuthRequest, res: Response): Promise<void> 
 // POST /api/gear/seed - Seed products (admin utility)
 export const seedProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const count = await Product.countDocuments();
-    if (count > 0) {
-      res.json({ success: true, message: `Already seeded (${count} products exist)` });
-      return;
-    }
+    // Allow reseed by clearing existing data
+    await Product.deleteMany({});
 
-    const products = [
-      { name: "Pro MMA Gloves", category: "gloves", price: 4999, images: ["https://images.unsplash.com/photo-1614632537197-38a17061c2bd?w=400"], description: "Professional-grade MMA training gloves with wrist support", stock: 50, rating: 4.8, reviewCount: 124, featured: true },
-      { name: "Boxing Gloves 16oz", category: "gloves", price: 3999, images: ["https://images.unsplash.com/photo-1583473848882-f9a5bc1994d8?w=400"], description: "Premium leather boxing gloves for sparring and bag work", stock: 35, rating: 4.7, reviewCount: 89, featured: true },
-      { name: "Thai Pads Pro", category: "pads", price: 5999, images: ["https://images.unsplash.com/photo-1615117950012-63c32b281fef?w=400"], description: "Heavy-duty Muay Thai kick pads with reinforced stitching", stock: 25, rating: 4.6, reviewCount: 67, featured: false },
-      { name: "Focus Mitts", category: "pads", price: 2499, images: ["https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400"], description: "Curved focus mitts for precision striking drills", stock: 40, rating: 4.5, reviewCount: 56, featured: false },
-      { name: "Head Guard Pro", category: "protection", price: 3499, images: ["https://images.unsplash.com/photo-1564415315949-7a0c4c73aab4?w=400"], description: "Full-face head protection for sparring", stock: 30, rating: 4.4, reviewCount: 45, featured: true },
-      { name: "Shin Guards", category: "protection", price: 2999, images: ["https://images.unsplash.com/photo-1517438322307-e67111335449?w=400"], description: "Padded shin guards for Muay Thai and MMA", stock: 45, rating: 4.6, reviewCount: 78, featured: false },
-      { name: "MMA Shorts", category: "apparel", price: 1999, images: ["https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400"], description: "Lightweight fight shorts with stretch panels", stock: 60, rating: 4.3, reviewCount: 92, featured: false },
-      { name: "Rash Guard Long Sleeve", category: "apparel", price: 2499, images: ["https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400"], description: "Compression rash guard for grappling and training", stock: 50, rating: 4.5, reviewCount: 67, featured: true },
-      { name: "Heavy Bag 100lb", category: "equipment", price: 12999, images: ["https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400"], description: "Professional heavy bag for home gym training", stock: 15, rating: 4.8, reviewCount: 34, featured: true },
-      { name: "Speed Bag", category: "equipment", price: 3499, images: ["https://images.unsplash.com/photo-1495555961986-6d4c1ecb7be3?w=400"], description: "Double-end speed bag for timing and accuracy", stock: 20, rating: 4.4, reviewCount: 28, featured: false },
-      { name: "Hand Wraps (Pair)", category: "protection", price: 499, images: ["https://images.unsplash.com/photo-1583473848882-f9a5bc1994d8?w=400"], description: "Mexican-style hand wraps for boxing and MMA", stock: 100, rating: 4.7, reviewCount: 156, featured: false },
-      { name: "Protein Powder 2kg", category: "supplements", price: 4499, images: ["https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=400"], description: "Whey protein for muscle recovery after training", stock: 40, rating: 4.5, reviewCount: 89, featured: false },
-    ];
-
-    await Product.insertMany(products);
-    res.json({ success: true, message: `Seeded ${products.length} products` });
+    const { productSeedData } = await import('../data/productSeedData');
+    await Product.insertMany(productSeedData);
+    res.json({ success: true, message: `Seeded ${productSeedData.length} products` });
   } catch (error) {
     console.error('Seed products error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

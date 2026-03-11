@@ -12,7 +12,12 @@
     "train-model": "ts-node src/scripts/trainModel.ts",
     "import-data:prod": "node dist/scripts/importData.js"
   },
-  "keywords": ["mma", "ufc", "analytics", "api"],
+  "keywords": [
+    "mma",
+    "ufc",
+    "analytics",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -25,7 +30,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

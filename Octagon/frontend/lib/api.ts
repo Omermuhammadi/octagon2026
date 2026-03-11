@@ -540,6 +540,13 @@ export const gearApi = {
       token,
     }),
 
+  createCheckoutSession: (items: { productId: string; quantity: number }[], shippingAddress: string, token: string) =>
+    apiRequest<{ sessionId: string; url: string }>('/gear/create-checkout-session', {
+      method: 'POST',
+      body: { items, shippingAddress },
+      token,
+    }),
+
   getOrders: (token: string) =>
     apiRequest<OrderData[]>('/gear/orders', { token }),
 

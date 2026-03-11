@@ -203,7 +203,7 @@ export const getCoachStats = async (req: AuthRequest, res: Response): Promise<vo
     const [strategiesGenerated, avgResult] = await Promise.all([
       Strategy.countDocuments({ coachId }),
       Strategy.aggregate([
-        { $match: { coachId: new mongoose.Types.ObjectId(coachId as string) } },
+        { $match: { coachId: new mongoose.Types.ObjectId(coachId as unknown as string) } },
         { $group: { _id: null, avgConfidence: { $avg: '$prediction.confidence' } } },
       ]),
     ]);
