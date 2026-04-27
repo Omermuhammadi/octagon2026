@@ -173,11 +173,11 @@ function verdictStyle(verdict: "shoot" | "stuff" | "neutral") {
 function priorityStyle(priority: "primary" | "secondary" | "low") {
     switch (priority) {
         case "primary":
-            return "bg-red-500/20 text-red-400 border-red-500/30";
+            return "bg-red-50 text-red-700 border-red-200";
         case "secondary":
-            return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+            return "bg-amber-50 text-amber-700 border-amber-200";
         case "low":
-            return "bg-neutral-500/20 text-neutral-400 border-neutral-500/30";
+            return "bg-gray-100 text-gray-600 border-gray-200";
     }
 }
 
@@ -400,8 +400,8 @@ export default function StrategyPage() {
 
     if (authLoading || !isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
         );
     }
@@ -409,25 +409,25 @@ export default function StrategyPage() {
     // Coach-only gate
     if (user?.role !== "coach") {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black flex items-center justify-center px-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-10 max-w-md w-full text-center"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 max-w-md w-full text-center"
                 >
                     <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
                         <Lock className="w-8 h-8 text-red-500" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-3">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
                         Coach Access Required
                     </h1>
-                    <p className="text-neutral-400 mb-8 leading-relaxed">
+                    <p className="text-gray-500 mb-8 leading-relaxed">
                         The Strategy Optimizer is an advanced tool available exclusively
                         to coaches. Upgrade your account to access AI-powered game plans.
                     </p>
                     <button
                         onClick={() => router.push("/dashboard/fan")}
-                        className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold rounded-xl transition-all"
+                        className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-gray-900 font-bold rounded-xl transition-all"
                     >
                         Back to Dashboard
                     </button>
@@ -454,9 +454,9 @@ export default function StrategyPage() {
                 {/* Win Probability */}
                 <motion.div
                     variants={staggerItem}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8"
                 >
-                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <BarChart3 className="w-5 h-5 text-red-500" /> Win Probability
                     </h2>
                     <div className="space-y-5">
@@ -466,18 +466,18 @@ export default function StrategyPage() {
                                 <span
                                     className={`font-bold ${
                                         prediction.winner === fighter1.name
-                                            ? "text-green-400"
-                                            : "text-white"
+                                            ? "text-green-600"
+                                            : "text-gray-900"
                                     }`}
                                 >
                                     {fighter1.name}
                                     {prediction.winner === fighter1.name && (
-                                        <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                                        <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                             WINNER
                                         </span>
                                     )}
                                 </span>
-                                <span className="text-white font-bold font-mono">
+                                <span className="text-gray-900 font-bold font-mono">
                                     {prediction.winnerProbability > prediction.loserProbability
                                         ? prediction.winner === fighter1.name
                                             ? prediction.winnerProbability
@@ -488,7 +488,7 @@ export default function StrategyPage() {
                                     %
                                 </span>
                             </div>
-                            <div className="w-full bg-white/5 rounded-full h-4 overflow-hidden">
+                            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{
@@ -506,7 +506,7 @@ export default function StrategyPage() {
                                     }`}
                                 />
                             </div>
-                            <p className="text-neutral-500 text-sm mt-1">
+                            <p className="text-gray-500 text-sm mt-1">
                                 {fighter1.record}
                             </p>
                         </div>
@@ -517,25 +517,25 @@ export default function StrategyPage() {
                                 <span
                                     className={`font-bold ${
                                         prediction.winner === fighter2.name
-                                            ? "text-green-400"
-                                            : "text-white"
+                                            ? "text-green-600"
+                                            : "text-gray-900"
                                     }`}
                                 >
                                     {fighter2.name}
                                     {prediction.winner === fighter2.name && (
-                                        <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                                        <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                             WINNER
                                         </span>
                                     )}
                                 </span>
-                                <span className="text-white font-bold font-mono">
+                                <span className="text-gray-900 font-bold font-mono">
                                     {prediction.winner === fighter2.name
                                         ? prediction.winnerProbability
                                         : prediction.loserProbability}
                                     %
                                 </span>
                             </div>
-                            <div className="w-full bg-white/5 rounded-full h-4 overflow-hidden">
+                            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{
@@ -553,7 +553,7 @@ export default function StrategyPage() {
                                     }`}
                                 />
                             </div>
-                            <p className="text-neutral-500 text-sm mt-1">
+                            <p className="text-gray-500 text-sm mt-1">
                                 {fighter2.record}
                             </p>
                         </div>
@@ -565,30 +565,30 @@ export default function StrategyPage() {
                     variants={staggerItem}
                     className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                 >
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 text-center">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center">
                         <Target className="w-8 h-8 text-red-500 mx-auto mb-3" />
-                        <p className="text-neutral-400 text-sm uppercase tracking-wider mb-1">
+                        <p className="text-gray-500 text-sm uppercase tracking-wider mb-1">
                             Predicted Method
                         </p>
-                        <p className="text-white text-xl font-bold">
+                        <p className="text-gray-900 text-xl font-bold">
                             {prediction.predictedMethod}
                         </p>
                     </div>
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 text-center">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center">
                         <Clock className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
-                        <p className="text-neutral-400 text-sm uppercase tracking-wider mb-1">
+                        <p className="text-gray-500 text-sm uppercase tracking-wider mb-1">
                             Predicted Round
                         </p>
-                        <p className="text-white text-xl font-bold">
+                        <p className="text-gray-900 text-xl font-bold">
                             Round {prediction.predictedRound}
                         </p>
                     </div>
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 text-center">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center">
                         <Award className="w-8 h-8 text-green-500 mx-auto mb-3" />
-                        <p className="text-neutral-400 text-sm uppercase tracking-wider mb-1">
+                        <p className="text-gray-500 text-sm uppercase tracking-wider mb-1">
                             Confidence
                         </p>
-                        <p className="text-white text-xl font-bold">
+                        <p className="text-gray-900 text-xl font-bold">
                             {prediction.confidence}%
                         </p>
                     </div>
@@ -597,9 +597,9 @@ export default function StrategyPage() {
                 {/* Physical Comparison */}
                 <motion.div
                     variants={staggerItem}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8"
                 >
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-red-500" /> Physical
                         Comparison
                     </h3>
@@ -609,37 +609,37 @@ export default function StrategyPage() {
                             <p className="text-sm font-bold text-red-400 uppercase tracking-wider">
                                 {fighter1.name.split(" ").pop()}
                             </p>
-                            <p className="text-white text-lg font-mono">
+                            <p className="text-gray-900 text-lg font-mono">
                                 {fighter1.height || "N/A"}
                             </p>
-                            <p className="text-white text-lg font-mono">
+                            <p className="text-gray-900 text-lg font-mono">
                                 {fighter1.reach ? `${fighter1.reach}"` : "N/A"}
                             </p>
-                            <p className="text-white text-lg">
+                            <p className="text-gray-900 text-lg">
                                 {fighter1.stance || "N/A"}
                             </p>
                         </div>
                         {/* Labels */}
                         <div className="space-y-4">
-                            <p className="text-sm font-bold text-neutral-500 uppercase tracking-wider">
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">
                                 Stat
                             </p>
-                            <p className="text-neutral-400 text-lg">Height</p>
-                            <p className="text-neutral-400 text-lg">Reach</p>
-                            <p className="text-neutral-400 text-lg">Stance</p>
+                            <p className="text-gray-600 text-lg">Height</p>
+                            <p className="text-gray-600 text-lg">Reach</p>
+                            <p className="text-gray-600 text-lg">Stance</p>
                         </div>
                         {/* Fighter 2 values */}
                         <div className="space-y-4">
                             <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">
                                 {fighter2.name.split(" ").pop()}
                             </p>
-                            <p className="text-white text-lg font-mono">
+                            <p className="text-gray-900 text-lg font-mono">
                                 {fighter2.height || "N/A"}
                             </p>
-                            <p className="text-white text-lg font-mono">
+                            <p className="text-gray-900 text-lg font-mono">
                                 {fighter2.reach ? `${fighter2.reach}"` : "N/A"}
                             </p>
-                            <p className="text-white text-lg">
+                            <p className="text-gray-900 text-lg">
                                 {fighter2.stance || "N/A"}
                             </p>
                         </div>
@@ -651,9 +651,9 @@ export default function StrategyPage() {
                     prediction.methodProbabilities.length > 0 && (
                         <motion.div
                             variants={staggerItem}
-                            className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8"
+                            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8"
                         >
-                            <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
                                 <BarChart3 className="w-5 h-5 text-red-500" /> Method
                                 Probabilities
                             </h3>
@@ -661,14 +661,14 @@ export default function StrategyPage() {
                                 {prediction.methodProbabilities.map((mp) => (
                                     <div key={mp.method}>
                                         <div className="flex justify-between mb-1">
-                                            <span className="text-neutral-300 text-sm">
+                                            <span className="text-gray-700 text-sm">
                                                 {mp.method}
                                             </span>
-                                            <span className="text-white font-mono text-sm font-bold">
+                                            <span className="text-gray-900 font-mono text-sm font-bold">
                                                 {mp.probability}%
                                             </span>
                                         </div>
-                                        <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                                             <motion.div
                                                 initial={{ width: 0 }}
                                                 animate={{
@@ -691,9 +691,9 @@ export default function StrategyPage() {
                 {prediction.topFactors && prediction.topFactors.length > 0 && (
                     <motion.div
                         variants={staggerItem}
-                        className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8"
+                        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8"
                     >
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-red-500" /> Top
                             Factors
                         </h3>
@@ -705,10 +705,10 @@ export default function StrategyPage() {
                                 >
                                     <ChevronRight className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-white font-semibold">
+                                        <span className="text-gray-900 font-semibold">
                                             {f.factor}
                                         </span>
-                                        <span className="text-neutral-400 ml-1">
+                                        <span className="text-gray-500 ml-1">
                                             -- {f.description}
                                         </span>
                                         {f.impact && (
@@ -727,7 +727,7 @@ export default function StrategyPage() {
                 {fightStatsAvailable && (
                     <motion.div
                         variants={staggerItem}
-                        className="text-center text-neutral-500 text-xs"
+                        className="text-center text-gray-500 text-xs"
                     >
                         Analysis based on {fightStatsAvailable.fighter1} fight
                         stats for {fighter1.name} and{" "}
@@ -753,12 +753,12 @@ export default function StrategyPage() {
                 {/* Fighter 1 S/W */}
                 <motion.div
                     variants={staggerItem}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6"
                 >
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-red-500" />
                         {fighter1.name}
-                        <span className="text-xs text-neutral-500 font-normal ml-1">
+                        <span className="text-xs text-gray-500 font-normal ml-1">
                             (Your Fighter)
                         </span>
                     </h3>
@@ -766,7 +766,7 @@ export default function StrategyPage() {
                         {strengthsWeaknesses.fighter1.map((sw, idx) => (
                             <div
                                 key={idx}
-                                className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03]"
+                                className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
                             >
                                 <span
                                     className={`px-2 py-0.5 rounded-md text-xs font-bold border flex-shrink-0 ${ratingColor(
@@ -776,10 +776,10 @@ export default function StrategyPage() {
                                     {sw.rating}
                                 </span>
                                 <div>
-                                    <p className="text-white font-medium text-sm">
+                                    <p className="text-gray-900 font-medium text-sm">
                                         {sw.category}
                                     </p>
-                                    <p className="text-neutral-400 text-xs mt-0.5 leading-relaxed">
+                                    <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">
                                         {sw.detail}
                                     </p>
                                 </div>
@@ -791,12 +791,12 @@ export default function StrategyPage() {
                 {/* Fighter 2 S/W */}
                 <motion.div
                     variants={staggerItem}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6"
                 >
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-blue-500" />
                         {fighter2.name}
-                        <span className="text-xs text-neutral-500 font-normal ml-1">
+                        <span className="text-xs text-gray-500 font-normal ml-1">
                             (Opponent)
                         </span>
                     </h3>
@@ -804,7 +804,7 @@ export default function StrategyPage() {
                         {strengthsWeaknesses.fighter2.map((sw, idx) => (
                             <div
                                 key={idx}
-                                className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03]"
+                                className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
                             >
                                 <span
                                     className={`px-2 py-0.5 rounded-md text-xs font-bold border flex-shrink-0 ${ratingColor(
@@ -814,10 +814,10 @@ export default function StrategyPage() {
                                     {sw.rating}
                                 </span>
                                 <div>
-                                    <p className="text-white font-medium text-sm">
+                                    <p className="text-gray-900 font-medium text-sm">
                                         {sw.category}
                                     </p>
-                                    <p className="text-neutral-400 text-xs mt-0.5 leading-relaxed">
+                                    <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">
                                         {sw.detail}
                                     </p>
                                 </div>
@@ -843,10 +843,10 @@ export default function StrategyPage() {
                     <motion.div
                         key={rs.round}
                         variants={staggerItem}
-                        className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6"
+                        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6"
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-white">
+                            <h3 className="text-lg font-bold text-gray-900">
                                 Round {rs.round}
                             </h3>
                             <span
@@ -859,7 +859,7 @@ export default function StrategyPage() {
                         </div>
 
                         <div className="mb-4">
-                            <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                                 Tactics
                             </p>
                             <ul className="space-y-1.5">
@@ -869,7 +869,7 @@ export default function StrategyPage() {
                                         className="flex items-start gap-2 text-sm"
                                     >
                                         <ChevronRight className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
-                                        <span className="text-neutral-300">
+                                        <span className="text-gray-600">
                                             {t}
                                         </span>
                                     </li>
@@ -877,9 +877,9 @@ export default function StrategyPage() {
                             </ul>
                         </div>
 
-                        <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <div className="flex items-center gap-1.5">
-                                <span className="text-neutral-500 text-xs">
+                                <span className="text-gray-500 text-xs">
                                     Risk:
                                 </span>
                                 <span
@@ -893,7 +893,7 @@ export default function StrategyPage() {
                         </div>
 
                         {rs.notes && (
-                            <p className="text-neutral-500 text-xs mt-3 italic leading-relaxed">
+                            <p className="text-gray-500 text-xs mt-3 italic leading-relaxed">
                                 {rs.notes}
                             </p>
                         )}
@@ -926,13 +926,13 @@ export default function StrategyPage() {
                 >
                     <Crosshair className="w-8 h-8 text-red-500 flex-shrink-0" />
                     <div>
-                        <p className="text-white font-bold text-lg">
+                        <p className="text-gray-900 font-bold text-lg">
                             Best Range:{" "}
                             <span className="text-octagon-red capitalize">
                                 {rangeAnalysis.bestRange}
                             </span>
                         </p>
-                        <p className="text-neutral-400 text-sm">
+                        <p className="text-gray-500 text-sm">
                             Your fighter has the greatest advantage at this range.
                             Build the game plan around controlling{" "}
                             {rangeAnalysis.bestRange} distance.
@@ -945,14 +945,14 @@ export default function StrategyPage() {
                     <motion.div
                         key={key}
                         variants={staggerItem}
-                        className={`bg-neutral-900/50 backdrop-blur-sm rounded-2xl border p-6 ${
+                        className={`bg-white rounded-2xl border p-6 shadow-sm ${
                             rangeAnalysis.bestRange.toLowerCase() === key
                                 ? "border-red-500/30"
-                                : "border-white/5"
+                                : "border-gray-200"
                         }`}
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                            <h3 className="text-gray-900 font-bold text-lg flex items-center gap-2">
                                 {label}
                                 {rangeAnalysis.bestRange.toLowerCase() === key && (
                                     <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
@@ -969,11 +969,11 @@ export default function StrategyPage() {
                                     <span className="text-red-400 font-medium">
                                         {fighter1.name}
                                     </span>
-                                    <span className="text-white font-mono font-bold">
+                                    <span className="text-gray-900 font-mono font-bold">
                                         {data.fighter1Score}/10
                                     </span>
                                 </div>
-                                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+                                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{
@@ -992,11 +992,11 @@ export default function StrategyPage() {
                                     <span className="text-blue-400 font-medium">
                                         {fighter2.name}
                                     </span>
-                                    <span className="text-white font-mono font-bold">
+                                    <span className="text-gray-900 font-mono font-bold">
                                         {data.fighter2Score}/10
                                     </span>
                                 </div>
-                                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+                                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{
@@ -1012,11 +1012,11 @@ export default function StrategyPage() {
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-white/5">
-                            <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">
+                        <div className="pt-3 border-t border-gray-100">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">
                                 Recommendation
                             </p>
-                            <p className="text-neutral-300 text-sm leading-relaxed">
+                            <p className="text-gray-700 text-sm leading-relaxed">
                                 {data.recommendation}
                             </p>
                         </div>
@@ -1049,13 +1049,13 @@ export default function StrategyPage() {
                 >
                     <Target className="w-8 h-8 text-red-500 flex-shrink-0" />
                     <div>
-                        <p className="text-white font-bold text-lg">
+                        <p className="text-gray-900 font-bold text-lg">
                             Primary Target:{" "}
                             <span className="text-octagon-red capitalize">
                                 {strikeTargeting.primaryTarget}
                             </span>
                         </p>
-                        <p className="text-neutral-400 text-sm">
+                        <p className="text-gray-500 text-sm">
                             Focus striking attacks on this target zone against{" "}
                             {fighter2.name} for maximum effectiveness.
                         </p>
@@ -1068,15 +1068,15 @@ export default function StrategyPage() {
                         <motion.div
                             key={key}
                             variants={staggerItem}
-                            className={`bg-neutral-900/50 backdrop-blur-sm rounded-2xl border p-6 ${
+                            className={`bg-white rounded-2xl border p-6 shadow-sm ${
                                 strikeTargeting.primaryTarget.toLowerCase() ===
                                 key
                                     ? "border-red-500/30"
-                                    : "border-white/5"
+                                    : "border-gray-200"
                             }`}
                         >
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-white font-bold text-lg">
+                                <h3 className="text-gray-900 font-bold text-lg">
                                     {label}
                                 </h3>
                                 <span
@@ -1089,11 +1089,11 @@ export default function StrategyPage() {
                             </div>
 
                             <div className="mb-4">
-                                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                                <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                                     Opponent Defense
                                 </p>
                                 <div className="flex items-center gap-3">
-                                    <div className="flex-1 bg-white/5 rounded-full h-3 overflow-hidden">
+                                    <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{
@@ -1106,17 +1106,17 @@ export default function StrategyPage() {
                                             className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
                                         />
                                     </div>
-                                    <span className="text-white font-mono text-sm font-bold">
+                                    <span className="text-gray-900 font-mono text-sm font-bold">
                                         {data.opponentDefense}%
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="pt-3 border-t border-white/5">
-                                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">
+                            <div className="pt-3 border-t border-gray-100">
+                                <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">
                                     Recommendation
                                 </p>
-                                <p className="text-neutral-300 text-sm leading-relaxed">
+                                <p className="text-gray-700 text-sm leading-relaxed">
                                     {data.recommendation}
                                 </p>
                             </div>
@@ -1150,7 +1150,7 @@ export default function StrategyPage() {
                 {/* Verdict Badge */}
                 <motion.div
                     variants={staggerItem}
-                    className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8 text-center"
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8 text-center"
                 >
                     <div
                         className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xl font-bold border ${verdictStyle(
@@ -1166,7 +1166,7 @@ export default function StrategyPage() {
                                 : "NEUTRAL -- Situational"}
                         </span>
                     </div>
-                    <p className="text-neutral-400 text-sm mt-4 max-w-xl mx-auto leading-relaxed">
+                    <p className="text-gray-500 text-sm mt-4 max-w-xl mx-auto leading-relaxed">
                         {takedownPlan.details}
                     </p>
                 </motion.div>
@@ -1176,47 +1176,47 @@ export default function StrategyPage() {
                     variants={staggerItem}
                     className="grid grid-cols-2 md:grid-cols-4 gap-4"
                 >
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-5 text-center">
-                        <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                             Your TD Accuracy
                         </p>
-                        <p className="text-white text-2xl font-bold font-mono">
+                        <p className="text-gray-900 text-2xl font-bold font-mono">
                             {takedownPlan.yourTdAccuracy}%
                         </p>
-                        <p className="text-neutral-500 text-xs mt-1">
+                        <p className="text-gray-500 text-xs mt-1">
                             {fighter1.name}
                         </p>
                     </div>
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-5 text-center">
-                        <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                             Opp. TD Defense
                         </p>
-                        <p className="text-white text-2xl font-bold font-mono">
+                        <p className="text-gray-900 text-2xl font-bold font-mono">
                             {takedownPlan.opponentTdDefense}%
                         </p>
-                        <p className="text-neutral-500 text-xs mt-1">
+                        <p className="text-gray-500 text-xs mt-1">
                             {fighter2.name}
                         </p>
                     </div>
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-5 text-center">
-                        <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                             Opp. TD Accuracy
                         </p>
-                        <p className="text-white text-2xl font-bold font-mono">
+                        <p className="text-gray-900 text-2xl font-bold font-mono">
                             {takedownPlan.opponentTdAccuracy}%
                         </p>
-                        <p className="text-neutral-500 text-xs mt-1">
+                        <p className="text-gray-500 text-xs mt-1">
                             {fighter2.name}
                         </p>
                     </div>
-                    <div className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-5 text-center">
-                        <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
                             Your TD Defense
                         </p>
-                        <p className="text-white text-2xl font-bold font-mono">
+                        <p className="text-gray-900 text-2xl font-bold font-mono">
                             {takedownPlan.yourTdDefense}%
                         </p>
-                        <p className="text-neutral-500 text-xs mt-1">
+                        <p className="text-gray-500 text-xs mt-1">
                             {fighter1.name}
                         </p>
                     </div>
@@ -1238,13 +1238,13 @@ export default function StrategyPage() {
                 {result.dangerZones.length === 0 && (
                     <motion.div
                         variants={staggerItem}
-                        className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-8 text-center"
+                        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center"
                     >
                         <Shield className="w-10 h-10 text-green-500 mx-auto mb-3" />
-                        <p className="text-white font-bold text-lg">
+                        <p className="text-gray-900 font-bold text-lg">
                             No Major Threats Identified
                         </p>
-                        <p className="text-neutral-400 text-sm mt-1">
+                        <p className="text-gray-500 text-sm mt-1">
                             The analysis did not flag any critical danger zones for
                             this matchup.
                         </p>
@@ -1255,12 +1255,12 @@ export default function StrategyPage() {
                     <motion.div
                         key={idx}
                         variants={staggerItem}
-                        className={`bg-neutral-900/50 backdrop-blur-sm rounded-2xl border p-5 flex items-start gap-4 ${
+                        className={`bg-white rounded-2xl border p-5 shadow-sm flex items-start gap-4 ${
                             dz.severity === "HIGH"
                                 ? "border-red-500/20"
                                 : dz.severity === "MEDIUM"
                                 ? "border-yellow-500/20"
-                                : "border-white/5"
+                                : "border-gray-200"
                         }`}
                     >
                         <div
@@ -1284,7 +1284,7 @@ export default function StrategyPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <p className="text-white font-bold">
+                                <p className="text-gray-900 font-bold">
                                     {dz.threat}
                                 </p>
                                 <span
@@ -1295,7 +1295,7 @@ export default function StrategyPage() {
                                     {dz.severity}
                                 </span>
                             </div>
-                            <p className="text-neutral-400 text-sm leading-relaxed">
+                            <p className="text-gray-500 text-sm leading-relaxed">
                                 {dz.detail}
                             </p>
                         </div>
@@ -1322,7 +1322,7 @@ export default function StrategyPage() {
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                             copied
                                 ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                : "bg-neutral-800 text-neutral-300 border border-white/10 hover:bg-neutral-700 hover:text-white"
+                                : "bg-neutral-800 text-gray-600 border border-white/10 hover:bg-neutral-700 hover:text-white"
                         }`}
                     >
                         {copied ? (
@@ -1343,7 +1343,7 @@ export default function StrategyPage() {
                     <motion.div
                         key={ca.round}
                         variants={staggerItem}
-                        className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6"
+                        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6"
                     >
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
@@ -1351,7 +1351,7 @@ export default function StrategyPage() {
                                     {ca.round}
                                 </span>
                             </div>
-                            <h3 className="text-white font-bold text-lg">
+                            <h3 className="text-gray-900 font-bold text-lg">
                                 Round {ca.round} Corner
                             </h3>
                         </div>
@@ -1362,7 +1362,7 @@ export default function StrategyPage() {
                                     className="flex items-start gap-3 text-sm"
                                 >
                                     <MessageSquare className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-neutral-300 leading-relaxed">
+                                    <span className="text-gray-600 leading-relaxed">
                                         {a}
                                     </span>
                                 </li>
@@ -1402,7 +1402,7 @@ export default function StrategyPage() {
     // -----------------------------------------------------------------------
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black pt-24 pb-16">
+        <div className="min-h-screen bg-gray-50 pt-24 pb-16">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <motion.div
@@ -1410,10 +1410,10 @@ export default function StrategyPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
-                        STRATEGY <span className="text-octagon-red">OPTIMIZER</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-gray-900 mb-4">
+                        STRATEGY <span className="text-red-600">OPTIMIZER</span>
                     </h1>
-                    <p className="text-neutral-400 max-w-xl mx-auto text-lg">
+                    <p className="text-gray-500 max-w-xl mx-auto text-lg">
                         AI-powered fight game plans built from statistical analysis
                         and matchup intelligence
                     </p>
@@ -1431,11 +1431,11 @@ export default function StrategyPage() {
                         className="md:col-span-2 relative"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <label className="block text-sm font-medium text-neutral-400 uppercase tracking-wider mb-2">
+                        <label className="block text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
                             Your Fighter
                         </label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
                                 value={fighter1Search}
@@ -1446,11 +1446,11 @@ export default function StrategyPage() {
                                 }}
                                 onFocus={() => setShowF1Dropdown(true)}
                                 placeholder="Search fighter..."
-                                className="w-full bg-neutral-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-red-500/50 transition-colors"
+                                className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-400 transition-colors shadow-sm"
                             />
                         </div>
                         {showF1Dropdown && fighter1Options.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-white/10 rounded-xl max-h-60 overflow-y-auto shadow-2xl">
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl max-h-60 overflow-y-auto shadow-xl">
                                 {fighter1Options.map((f) => (
                                     <button
                                         key={f._id}
@@ -1459,12 +1459,12 @@ export default function StrategyPage() {
                                             setFighter1Search(f.name);
                                             setShowF1Dropdown(false);
                                         }}
-                                        className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                                     >
-                                        <span className="text-white font-medium">
+                                        <span className="text-gray-900 font-medium">
                                             {f.name}
                                         </span>
-                                        <span className="text-neutral-500 text-sm ml-2">
+                                        <span className="text-gray-500 text-sm ml-2">
                                             ({f.wins}-{f.losses}-{f.draws})
                                         </span>
                                     </button>
@@ -1472,11 +1472,11 @@ export default function StrategyPage() {
                             </div>
                         )}
                         {selectedFighter1 && (
-                            <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                <p className="text-white font-semibold">
+                            <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-lg">
+                                <p className="text-gray-900 font-semibold">
                                     {selectedFighter1.name}
                                 </p>
-                                <p className="text-neutral-400 text-sm">
+                                <p className="text-gray-500 text-sm">
                                     {selectedFighter1.wins}W-{selectedFighter1.losses}L-
                                     {selectedFighter1.draws}D |{" "}
                                     {selectedFighter1.weight}
@@ -1488,7 +1488,7 @@ export default function StrategyPage() {
                     {/* VS Circle */}
                     <div className="flex items-center justify-center">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-500/20">
-                            <span className="text-white font-bold text-xl">
+                            <span className="text-gray-900 font-bold text-xl">
                                 VS
                             </span>
                         </div>
@@ -1499,11 +1499,11 @@ export default function StrategyPage() {
                         className="md:col-span-2 relative"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <label className="block text-sm font-medium text-neutral-400 uppercase tracking-wider mb-2">
+                        <label className="block text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">
                             Opponent
                         </label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
                                 value={fighter2Search}
@@ -1514,11 +1514,11 @@ export default function StrategyPage() {
                                 }}
                                 onFocus={() => setShowF2Dropdown(true)}
                                 placeholder="Search fighter..."
-                                className="w-full bg-neutral-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-red-500/50 transition-colors"
+                                className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-400 transition-colors shadow-sm"
                             />
                         </div>
                         {showF2Dropdown && fighter2Options.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-white/10 rounded-xl max-h-60 overflow-y-auto shadow-2xl">
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl max-h-60 overflow-y-auto shadow-xl">
                                 {fighter2Options.map((f) => (
                                     <button
                                         key={f._id}
@@ -1527,12 +1527,12 @@ export default function StrategyPage() {
                                             setFighter2Search(f.name);
                                             setShowF2Dropdown(false);
                                         }}
-                                        className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                                     >
-                                        <span className="text-white font-medium">
+                                        <span className="text-gray-900 font-medium">
                                             {f.name}
                                         </span>
-                                        <span className="text-neutral-500 text-sm ml-2">
+                                        <span className="text-gray-500 text-sm ml-2">
                                             ({f.wins}-{f.losses}-{f.draws})
                                         </span>
                                     </button>
@@ -1541,10 +1541,10 @@ export default function StrategyPage() {
                         )}
                         {selectedFighter2 && (
                             <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                <p className="text-white font-semibold">
+                                <p className="text-gray-900 font-semibold">
                                     {selectedFighter2.name}
                                 </p>
-                                <p className="text-neutral-400 text-sm">
+                                <p className="text-gray-500 text-sm">
                                     {selectedFighter2.wins}W-{selectedFighter2.losses}L-
                                     {selectedFighter2.draws}D |{" "}
                                     {selectedFighter2.weight}
@@ -1564,7 +1564,7 @@ export default function StrategyPage() {
                     {result ? (
                         <button
                             onClick={handleReset}
-                            className="px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-lg rounded-xl transition-all flex items-center gap-3 border border-white/10"
+                            className="px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-gray-900 font-bold text-lg rounded-xl transition-all flex items-center gap-3 border border-white/10"
                         >
                             <RotateCcw className="w-5 h-5" />
                             New Strategy
@@ -1577,7 +1577,7 @@ export default function StrategyPage() {
                                 !selectedFighter2 ||
                                 generating
                             }
-                            className="px-10 py-4 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold text-lg rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-3"
+                            className="px-10 py-4 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-gray-900 font-bold text-lg rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-3"
                         >
                             {generating ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -1608,11 +1608,11 @@ export default function StrategyPage() {
                         {[1, 2, 3].map((i) => (
                             <div
                                 key={i}
-                                className="bg-neutral-900/50 rounded-2xl border border-white/5 p-8 animate-pulse"
+                                className="bg-white rounded-2xl border border-gray-200 p-8 animate-pulse"
                             >
-                                <div className="h-4 bg-white/5 rounded w-1/3 mb-4" />
-                                <div className="h-3 bg-white/5 rounded w-full mb-2" />
-                                <div className="h-3 bg-white/5 rounded w-2/3" />
+                                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4" />
+                                <div className="h-3 bg-gray-200 rounded w-full mb-2" />
+                                <div className="h-3 bg-gray-200 rounded w-2/3" />
                             </div>
                         ))}
                     </div>
@@ -1629,12 +1629,12 @@ export default function StrategyPage() {
                         >
                             {/* Matchup Title */}
                             <div className="text-center mb-2">
-                                <p className="text-neutral-500 text-sm uppercase tracking-wider">
+                                <p className="text-gray-500 text-sm uppercase tracking-wider">
                                     Game Plan
                                 </p>
-                                <p className="text-white text-xl font-bold">
+                                <p className="text-gray-900 text-xl font-bold">
                                     {result.fighter1.name}{" "}
-                                    <span className="text-neutral-500">vs</span>{" "}
+                                    <span className="text-gray-400">vs</span>{" "}
                                     {result.fighter2.name}
                                 </p>
                             </div>
@@ -1655,8 +1655,8 @@ export default function StrategyPage() {
                                             whileTap={{ scale: 0.97 }}
                                             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                                                 isActive
-                                                    ? "bg-red-600 text-white shadow-lg shadow-red-500/20"
-                                                    : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 border border-white/5"
+                                                    ? "bg-red-600 text-white shadow-sm"
+                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200"
                                             }`}
                                         >
                                             <Icon className="w-3.5 h-3.5" />
@@ -1707,25 +1707,25 @@ export default function StrategyPage() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 overflow-hidden"
+                                className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
                             >
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="border-b border-white/10">
-                                                <th className="text-left p-4 text-neutral-400 font-medium">
+                                                <th className="text-left p-4 text-gray-500 font-medium">
                                                     Matchup
                                                 </th>
-                                                <th className="text-left p-4 text-neutral-400 font-medium">
+                                                <th className="text-left p-4 text-gray-500 font-medium">
                                                     Predicted Winner
                                                 </th>
-                                                <th className="text-left p-4 text-neutral-400 font-medium">
+                                                <th className="text-left p-4 text-gray-500 font-medium">
                                                     Method
                                                 </th>
-                                                <th className="text-left p-4 text-neutral-400 font-medium">
+                                                <th className="text-left p-4 text-gray-500 font-medium">
                                                     Win %
                                                 </th>
-                                                <th className="text-left p-4 text-neutral-400 font-medium">
+                                                <th className="text-left p-4 text-gray-500 font-medium">
                                                     Date
                                                 </th>
                                                 <th className="p-4" />
@@ -1740,22 +1740,22 @@ export default function StrategyPage() {
                                                             `/strategy/${h._id}`
                                                         )
                                                     }
-                                                    className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
+                                                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                                                 >
-                                                    <td className="p-4 text-white">
+                                                    <td className="p-4 text-gray-900">
                                                         {h.fighter1Name} vs{" "}
                                                         {h.fighter2Name}
                                                     </td>
                                                     <td className="p-4 text-green-400 font-medium">
                                                         {h.prediction.winner}
                                                     </td>
-                                                    <td className="p-4 text-neutral-300">
+                                                    <td className="p-4 text-gray-600">
                                                         {h.prediction.method}
                                                     </td>
-                                                    <td className="p-4 text-neutral-300 font-mono">
+                                                    <td className="p-4 text-gray-600 font-mono">
                                                         {h.prediction.winProbability}%
                                                     </td>
-                                                    <td className="p-4 text-neutral-500">
+                                                    <td className="p-4 text-gray-500">
                                                         {new Date(
                                                             h.createdAt
                                                         ).toLocaleDateString()}
@@ -1772,7 +1772,7 @@ export default function StrategyPage() {
                                                                 deletingId ===
                                                                 h._id
                                                             }
-                                                            className="text-neutral-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                                                            className="text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40"
                                                             title="Delete strategy"
                                                         >
                                                             {deletingId ===
@@ -1796,10 +1796,10 @@ export default function StrategyPage() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-8 text-center"
+                                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center"
                             >
-                                <History className="w-8 h-8 text-neutral-600 mx-auto mb-3" />
-                                <p className="text-neutral-500">
+                                <History className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500">
                                     No strategy history yet. Generate your first
                                     game plan above.
                                 </p>

@@ -8,8 +8,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
+    "verify:phase1": "node scripts/phase1-gate.js",
     "import-data": "ts-node src/scripts/importData.ts",
     "train-model": "ts-node src/scripts/trainModel.ts",
+    "compute-analytics": "ts-node src/scripts/computeAnalytics.ts",
     "import-data:prod": "node dist/scripts/importData.js"
   },
   "keywords": [
@@ -31,6 +33,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
+    "octagon-oracle": "file:..",
     "stripe": "^20.4.1"
   },
   "devDependencies": {

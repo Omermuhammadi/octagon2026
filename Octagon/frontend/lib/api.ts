@@ -342,10 +342,15 @@ export interface PredictionResult {
   fighter2: { name: string; record: string; probability: number };
   prediction: {
     winner: string;
+    loser?: string;
     method: string;
     round: number;
     confidence: number;
     factors: string[];
+    topFactors?: { factor: string; description: string; impact: string; absContrib: number; direction?: 'positive' | 'negative' }[];
+    modelStats?: { modelType: string; samples: number; features: number; cvAccuracy: number };
+    lastTrained?: string;
+    counterfactual?: string | null;
   };
   id?: string;
 }
@@ -374,6 +379,62 @@ export const predictionApi = {
 
   getHistory: (token: string, page = 1, limit = 20) =>
     apiRequest<PredictionRecord[]>(`/predictions/history?page=${page}&limit=${limit}`, { token }),
+};
+
+// Analytics types
+export interface AnalyticsFeatureImportance {
+  name: string;
+  displayName: string;
+  importance: number;
+  lrWeight: number;
+}
+
+export interface AnalyticsTrainingStats {
+  samples: number;
+  cvAccuracy: number;
+  cvPrecision: number;
+  cvRecall: number;
+  cvF1: number;
+  trainAccuracy?: number;
+  lrCvAccuracy?: number;
+  gbtCvAccuracy?: number;
+  trainedAt: string;
+}
+
+export interface AnalyticsDistributionBin {
+  min: number;
+  max: number;
+  count: number;
+}
+
+export interface AnalyticsDistribution {
+  stat: string;
+  displayName: string;
+  bins: AnalyticsDistributionBin[];
+  mean: number;
+  median: number;
+  p25: number;
+  p75: number;
+}
+
+export interface AnalyticsSummary {
+  featureImportance: AnalyticsFeatureImportance[];
+  trainingStats: AnalyticsTrainingStats | null;
+  ensembleWeights: { lr: number; gbt: number } | null;
+  weightClassAccuracy?: { weightClass: string; accuracy: number; sampleSize: number }[];
+  calibration?: { bin: string; midpoint: number; actualWinRate: number; count: number }[];
+  distributions?: AnalyticsDistribution[];
+  styleMatrix?: Record<string, Record<string, number>>;
+  styleClassificationRules?: {
+    Striker: string;
+    Grappler: string;
+    WellRounded: string;
+  };
+}
+
+export const analyticsApi = {
+  getSummary: () =>
+    apiRequest<AnalyticsSummary>('/analytics/summary'),
 };
 
 // Roadmap types
@@ -813,6 +874,426 @@ export const fighterTrainingApi = {
 
   delete: (id: string, token: string) =>
     apiRequest(`/coach/fighter-training/${id}`, { method: 'DELETE', token }),
+};
+
+// ============================================
+// Phase 1: Stakeholder Connection Layer
+// ============================================
+
+// ---- Coach Relationships ----
+
+export type RelationshipStatus = 'pending' | 'active' | 'declined' | 'ended';
+
+export interface PopulatedUserRef {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'coach' | 'fighter' | 'beginner' | 'fan';
+  avatar?: string;
+  discipline?: string;
+  experienceLevel?: string;
+  weight?: string;
+}
+
+export interface Relationship {
+  _id: string;
+  coachId: PopulatedUserRef;
+  traineeId: PopulatedUserRef;
+  traineeRole: 'fighter' | 'beginner';
+  status: RelationshipStatus;
+  requestedBy: 'coach' | 'trainee';
+  notes: string;
+  acceptedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TraineeSummary {
+  relationshipId: string;
+  _id: string;
+  name: string;
+  email: string;
+  role: 'fighter' | 'beginner';
+  avatar?: string;
+  discipline?: string;
+  experienceLevel?: string;
+  weight?: string;
+  since?: string;
+}
+
+export interface MyCoach {
+  relationshipId: string;
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  discipline?: string;
+  experienceLevel?: string;
+  since?: string;
+}
+
+export const relationshipApi = {
+  list: (token: string, status?: RelationshipStatus) =>
+    apiRequest<Relationship[]>(`/relationships${status ? `?status=${status}` : ''}`, { token }),
+
+  create: (body: { traineeEmail?: string; coachEmail?: string; notes?: string }, token: string) =>
+    apiRequest<Relationship>('/relationships', { method: 'POST', body, token }),
+
+  respond: (id: string, action: 'accept' | 'decline', token: string) =>
+    apiRequest<Relationship>(`/relationships/${id}/respond`, {
+      method: 'PATCH',
+      body: { action },
+      token,
+    }),
+
+  end: (id: string, token: string) =>
+    apiRequest<Relationship>(`/relationships/${id}/end`, { method: 'PATCH', token }),
+
+  myTrainees: (token: string) =>
+    apiRequest<TraineeSummary[]>('/relationships/trainees', { token }),
+
+  myCoach: (token: string) =>
+    apiRequest<MyCoach | null>('/relationships/my-coach', { token }),
+};
+
+// ---- Assignments ----
+
+export type AssignmentType = 'training' | 'video' | 'weight' | 'reading' | 'sparring' | 'custom';
+export type AssignmentStatus = 'assigned' | 'submitted' | 'completed' | 'overdue';
+
+export interface AssignmentSubmission {
+  text?: string;
+  videoUrl?: string;
+  weightKg?: number;
+  submittedAt: string;
+}
+
+export interface AssignmentFeedback {
+  text: string;
+  rating?: number;
+  reviewedAt: string;
+}
+
+export interface Assignment {
+  _id: string;
+  coachId: PopulatedUserRef;
+  traineeId: PopulatedUserRef;
+  traineeRole: 'fighter' | 'beginner';
+  type: AssignmentType;
+  title: string;
+  description: string;
+  dueDate: string;
+  status: AssignmentStatus;
+  submission?: AssignmentSubmission;
+  feedback?: AssignmentFeedback;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssignmentStats {
+  assigned: number;
+  submitted: number;
+  completed: number;
+  overdue: number;
+  total: number;
+}
+
+export const assignmentApi = {
+  list: (token: string, params?: { status?: AssignmentStatus; traineeId?: string }) => {
+    const qs = params
+      ? '?' +
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== '')
+          .map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`)
+          .join('&')
+      : '';
+    return apiRequest<Assignment[]>(`/assignments${qs}`, { token });
+  },
+
+  get: (id: string, token: string) => apiRequest<Assignment>(`/assignments/${id}`, { token }),
+
+  create: (
+    body: {
+      traineeId: string;
+      type: AssignmentType;
+      title: string;
+      description: string;
+      dueDate: string;
+    },
+    token: string
+  ) => apiRequest<Assignment>('/assignments', { method: 'POST', body, token }),
+
+  submit: (
+    id: string,
+    body: { text?: string; videoUrl?: string; weightKg?: number },
+    token: string
+  ) =>
+    apiRequest<Assignment>(`/assignments/${id}/submit`, {
+      method: 'POST',
+      body,
+      token,
+    }),
+
+  review: (
+    id: string,
+    body: { text: string; rating?: number; markComplete?: boolean },
+    token: string
+  ) =>
+    apiRequest<Assignment>(`/assignments/${id}/review`, {
+      method: 'POST',
+      body,
+      token,
+    }),
+
+  delete: (id: string, token: string) =>
+    apiRequest(`/assignments/${id}`, { method: 'DELETE', token }),
+
+  stats: (token: string) => apiRequest<AssignmentStats>('/assignments/stats', { token }),
+};
+
+// ---- Messages ----
+
+export interface ConversationSummary {
+  _id: string;
+  otherUser: PopulatedUserRef;
+  lastMessage?: {
+    text: string;
+    senderId: string;
+    sentAt: string;
+  };
+  unread: number;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  _id: string;
+  conversationId: string;
+  senderId: string;
+  recipientId: string;
+  text: string;
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface Thread {
+  conversationId: string;
+  otherUser: PopulatedUserRef;
+  messages: ChatMessage[];
+}
+
+export const messageApi = {
+  conversations: (token: string) =>
+    apiRequest<ConversationSummary[]>('/messages/conversations', { token }),
+
+  thread: (userId: string, token: string) =>
+    apiRequest<Thread>(`/messages/thread/${userId}`, { token }),
+
+  send: (userId: string, text: string, token: string) =>
+    apiRequest<ChatMessage>(`/messages/thread/${userId}`, {
+      method: 'POST',
+      body: { text },
+      token,
+    }),
+
+  unreadCount: (token: string) =>
+    apiRequest<{ count: number }>('/messages/unread-count', { token }),
+};
+
+// ---- Activity ----
+
+export type ActivityAction =
+  | 'relationship_requested'
+  | 'relationship_accepted'
+  | 'relationship_declined'
+  | 'relationship_ended'
+  | 'assignment_created'
+  | 'assignment_submitted'
+  | 'assignment_completed'
+  | 'assignment_overdue'
+  | 'message_received'
+  | 'training_week_completed'
+  | 'prediction_made';
+
+export interface ActivityItem {
+  _id: string;
+  userId: string;
+  actorId: string;
+  actorName: string;
+  action: ActivityAction;
+  entityType: string;
+  entityId?: string;
+  metadata: Record<string, any>;
+  read: boolean;
+  createdAt: string;
+}
+
+export const activityApi = {
+  list: (token: string, limit = 30) =>
+    apiRequest<ActivityItem[]>(`/activity?limit=${limit}`, { token }),
+
+  markAllRead: (token: string) =>
+    apiRequest<{ updated: number }>('/activity/read', { method: 'PATCH', token }),
+
+  unreadCount: (token: string) =>
+    apiRequest<{ count: number }>('/activity/unread-count', { token }),
+};
+
+// ---- Fight Camp ----
+
+export interface Milestone {
+  _id: string;
+  title: string;
+  targetDate?: string;
+  completed: boolean;
+  completedAt?: string;
+  notes?: string;
+}
+
+export interface FightCamp {
+  _id: string;
+  userId: string;
+  coachId?: string;
+  opponentName: string;
+  opponentRecord?: string;
+  fightDate: string;
+  weightClass: string;
+  venue?: string;
+  status: 'upcoming' | 'active' | 'completed' | 'cancelled';
+  milestones: Milestone[];
+  notes?: string;
+  createdAt: string;
+}
+
+export interface SparringEntry {
+  _id: string;
+  userId: string;
+  fightCampId?: string;
+  date: string;
+  partnerName: string;
+  rounds: number;
+  notes?: string;
+  performanceRating: number;
+  tags: string[];
+  createdAt: string;
+}
+
+export const fightCampApi = {
+  create: (data: Partial<FightCamp>, token: string) =>
+    apiRequest<FightCamp>('/fight-camp', { method: 'POST', body: data, token }),
+
+  getActive: (token: string) =>
+    apiRequest<FightCamp | null>('/fight-camp', { token }),
+
+  listAll: (token: string) =>
+    apiRequest<FightCamp[]>('/fight-camp/all', { token }),
+
+  updateMilestone: (campId: string, milestoneId: string, data: { completed: boolean; notes?: string }, token: string) =>
+    apiRequest<FightCamp>(`/fight-camp/${campId}/milestone/${milestoneId}`, { method: 'PATCH', body: data, token }),
+
+  updateStatus: (campId: string, status: string, token: string) =>
+    apiRequest<FightCamp>(`/fight-camp/${campId}/status`, { method: 'PATCH', body: { status }, token }),
+
+  addSparring: (data: Partial<SparringEntry>, token: string) =>
+    apiRequest<SparringEntry>('/fight-camp/sparring', { method: 'POST', body: data, token }),
+
+  listSparring: (token: string, fightCampId?: string) =>
+    apiRequest<SparringEntry[]>(`/fight-camp/sparring${fightCampId ? `?fightCampId=${fightCampId}` : ''}`, { token }),
+
+  deleteSparring: (id: string, token: string) =>
+    apiRequest<{}>(`/fight-camp/sparring/${id}`, { method: 'DELETE', token }),
+};
+
+// ---- Weight Cut ----
+
+export interface WeightEntry {
+  _id: string;
+  date: string;
+  weightKg: number;
+  notes?: string;
+}
+
+export interface WeightLogData {
+  _id: string;
+  userId: string;
+  fightCampId?: string;
+  targetWeightKg: number;
+  alertThresholdKg: number;
+  entries: WeightEntry[];
+}
+
+export const weightCutApi = {
+  logWeight: (data: { weightKg: number; date?: string; notes?: string; fightCampId?: string }, token: string) =>
+    apiRequest<WeightLogData>('/weight-cut/log', { method: 'POST', body: data, token }),
+
+  getHistory: (token: string) =>
+    apiRequest<WeightLogData>('/weight-cut/history', { token }),
+
+  setTarget: (data: { targetWeightKg: number; alertThresholdKg?: number; fightCampId?: string }, token: string) =>
+    apiRequest<WeightLogData>('/weight-cut/target', { method: 'PUT', body: data, token }),
+
+  deleteEntry: (entryId: string, token: string) =>
+    apiRequest<WeightLogData>(`/weight-cut/entry/${entryId}`, { method: 'DELETE', token }),
+};
+
+// ---- Opponent Dossier ----
+
+export interface OpponentStats {
+  record: string;
+  weightClass: string;
+  stance: string;
+  slpm: number;
+  stracc: number;
+  tdavg: number;
+  tda: number;
+  subavg: number;
+}
+
+export interface DossierResult {
+  opponentName: string;
+  opponentStats: OpponentStats | null;
+  gamePlan: string;
+  generatedAt: string;
+}
+
+export const opponentDossierApi = {
+  search: (q: string, token: string) =>
+    apiRequest<any[]>(`/opponent-dossier/search?q=${encodeURIComponent(q)}`, { token }),
+
+  generate: (opponentName: string, fightCampId: string | undefined, token: string) =>
+    apiRequest<DossierResult>('/opponent-dossier/generate', {
+      method: 'POST',
+      body: { opponentName, fightCampId },
+      token,
+    }),
+};
+
+// ---- Coach Analytics ----
+
+export interface TraineeAnalytics {
+  traineeId: string;
+  name: string;
+  role: 'fighter' | 'beginner';
+  weight: { current: number | null; target: number | null; overTarget: number | null } | null;
+  assignmentCompletionPct: number;
+  sparringThisWeek: number;
+  fightCamp: {
+    opponentName: string;
+    fightDate: string;
+    daysRemaining: number;
+    milestonesCompleted: number;
+    milestonesTotal: number;
+  } | null;
+}
+
+export interface CoachAnalyticsData {
+  trainees: TraineeAnalytics[];
+}
+
+export const coachAnalyticsApi = {
+  getTraineeAnalytics: (token: string) =>
+    apiRequest<CoachAnalyticsData>('/coach/trainee-analytics', { token }),
 };
 
 export { apiRequest, ApiError, API_BASE_URL };

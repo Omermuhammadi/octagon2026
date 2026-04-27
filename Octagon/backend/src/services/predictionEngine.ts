@@ -76,7 +76,7 @@ export interface PredictionResult {
   methodProbabilities: { method: string; probability: number }[];
   predictedRound: number;
   confidence: number;
-  topFactors: { factor: string; description: string; impact: string }[];
+  topFactors: { factor: string; description: string; impact: string; absContrib: number; direction: 'positive' | 'negative' }[];
 }
 
 // ============================================================
@@ -368,8 +368,8 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
     }
   }
 
-  // Confidence
-  const confidence = Math.round((winProb - 0.5) * 200);
+  // Confidence — direct mapping of win probability to percentage
+  const confidence = Math.round(winProb * 100);
 
   // Top factors
   const factorLabels: Record<string, string> = {
@@ -414,7 +414,7 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
     reach: 'Reach Advantage',
   };
 
-  const factorDetails: { factor: string; description: string; impact: string; absContrib: number }[] = [];
+  const factorDetails: { factor: string; description: string; impact: string; absContrib: number; direction: 'positive' | 'negative' }[] = [];
 
   // For v2 models, use feature importance from the model
   if (m.version >= 2) {
@@ -434,6 +434,7 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
         description: `${adv} has the edge in ${label.toLowerCase()} (diff: ${Math.abs(diff).toFixed(2)})`,
         impact: contribution > 0.05 ? 'high' : contribution > 0.02 ? 'medium' : 'low',
         absContrib: contribution,
+        direction: adv === winner.name ? 'positive' : 'negative',
       });
     }
   } else {
@@ -453,13 +454,14 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
         description: `${adv} has the edge in ${label.toLowerCase()} (difference: ${Math.abs(diff).toFixed(1)})`,
         impact: contribution > 0.3 ? 'high' : contribution > 0.15 ? 'medium' : 'low',
         absContrib: contribution,
+        direction: adv === winner.name ? 'positive' : 'negative',
       });
     }
   }
 
   factorDetails.sort((a, b) => b.absContrib - a.absContrib);
-  const topFactors = factorDetails.slice(0, 3).map(({ factor, description, impact }) => ({
-    factor, description, impact,
+  const topFactors = factorDetails.slice(0, 5).map(({ factor, description, impact, absContrib, direction }) => ({
+    factor, description, impact, absContrib, direction,
   }));
 
   if (topFactors.length === 0) {
@@ -467,6 +469,8 @@ export function predict(fighter1: FighterStats, fighter2: FighterStats): Predict
       factor: 'Even Matchup',
       description: 'Very closely matched fighters with similar statistical profiles',
       impact: 'medium',
+      absContrib: 0,
+      direction: 'positive' as const,
     });
   }
 

@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} font-sans bg-black text-white antialiased`}>
+      <body className={`${outfit.variable} font-sans bg-white text-gray-900 antialiased`}>
         <AuthProvider>
           <CartProvider>
             <Navbar />

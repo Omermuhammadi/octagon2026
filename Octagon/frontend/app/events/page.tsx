@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { eventApi, Event as EventData, EventFight } from "@/lib/api";
 import {
     Calendar, MapPin, Search, Loader2, ChevronDown, ChevronUp,
-    Trophy, Clock, RefreshCw, Swords, Shield, Crown, Flame
+    Trophy, Clock, RefreshCw, Swords, Shield, Crown, Flame, TrendingUp
 } from "lucide-react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 type TabFilter = "upcoming" | "completed" | "all";
@@ -44,10 +45,27 @@ export default function EventsPage() {
     const [syncing, setSyncing] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [tabTotals, setTabTotals] = useState<Record<TabFilter, number>>({ upcoming: 0, completed: 0, all: 0 });
 
     useEffect(() => {
         fetchEvents();
     }, [tab, page]);
+
+    // Pre-fetch counts for all tabs on mount so badges show immediately
+    useEffect(() => {
+        Promise.all([
+            eventApi.getEvents(1, 1, 'upcoming'),
+            eventApi.getEvents(1, 1, 'completed'),
+            eventApi.getEvents(1, 1, undefined),
+        ]).then(([u, c, a]) => {
+            setTabTotals({
+                upcoming: u.pagination?.total ?? 0,
+                completed: c.pagination?.total ?? 0,
+                all: a.pagination?.total ?? 0,
+            });
+        }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchEvents = async () => {
         setLoading(true);
@@ -57,6 +75,7 @@ export default function EventsPage() {
             setEvents(response.data || []);
             if (response.pagination) {
                 setTotalPages(response.pagination.totalPages);
+                setTabTotals(prev => ({ ...prev, [tab]: response.pagination!.total }));
             }
         } catch (err) {
             console.error("Failed to fetch events:", err);
@@ -112,11 +131,7 @@ export default function EventsPage() {
           )
         : events;
 
-    const tabCounts = useMemo(() => ({
-        upcoming: events.length,
-        completed: events.length,
-        all: events.length,
-    }), [events]);
+    const tabCounts = tabTotals;
 
     return (
         <div className="min-h-screen bg-black text-white pt-28 pb-16">
@@ -175,6 +190,11 @@ export default function EventsPage() {
                                 {t === "completed" && <Trophy className="w-3 h-3 inline mr-1.5 -mt-0.5" />}
                                 {t === "all" && <Flame className="w-3 h-3 inline mr-1.5 -mt-0.5" />}
                                 {t}
+                                {tabCounts[t] > 0 && (
+                                    <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-black ${tab === t ? "bg-white/20" : "bg-white/10 text-gray-500"}`}>
+                                        {tabCounts[t]}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -532,6 +552,7 @@ function FightRow({
     totalFights: number;
     isCompleted: boolean;
 }) {
+    const predictUrl = `/prediction?f1=${encodeURIComponent(fight.fighter1)}&f2=${encodeURIComponent(fight.fighter2)}`;
     const label = getFightLabel(fight.position, totalFights);
     const isMainEvent = fight.position === 1;
     const f1Won = fight.winner === fight.fighter1;
@@ -561,7 +582,7 @@ function FightRow({
             )}
 
             {/* Fighter matchup */}
-            <div className="flex items-center px-3 sm:px-5 py-3 sm:py-4">
+            <div className="flex items-center px-3 sm:px-5 py-3 sm:py-4 gap-2">
                 {/* Fighter 1 */}
                 <div className="flex-1 flex items-center justify-end gap-2 sm:gap-3 min-w-0">
                     {hasResult && f1Won && (
@@ -614,6 +635,18 @@ function FightRow({
                         </span>
                     )}
                 </div>
+
+                {/* Predict Button */}
+                {!isCompleted && (
+                    <Link
+                        href={predictUrl}
+                        className="hidden sm:flex flex-shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg bg-octagon-red/10 border border-octagon-red/30 text-octagon-red text-[10px] font-bold uppercase tracking-widest hover:bg-octagon-red hover:text-white transition-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <TrendingUp className="w-3 h-3" />
+                        Predict
+                    </Link>
+                )}
             </div>
         </div>
     );

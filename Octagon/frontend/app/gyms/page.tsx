@@ -156,14 +156,14 @@ export default function GymsPage() {
     // Show loading while checking auth state
     if (isLoading || !isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-octagon-red" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black pt-24 px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="min-h-screen bg-gray-50 pt-24 px-4 sm:px-6 lg:px-8 pb-12">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div
@@ -171,10 +171,10 @@ export default function GymsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-10"
                 >
-                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
-                        FIND A <span className="text-octagon-red">GYM</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-gray-900 mb-4">
+                        FIND A <span className="text-red-600">GYM</span>
                     </h1>
-                    <p className="text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-gray-500 max-w-2xl mx-auto">
                         Discover top-rated MMA and martial arts gyms across Pakistan
                     </p>
                 </motion.div>
@@ -189,7 +189,7 @@ export default function GymsPage() {
                                         placeholder="Search gyms by name, area, or discipline..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-12 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-octagon-red/50 focus:ring-1 focus:ring-octagon-red/50 transition-all"
+                                        className="w-full pl-12 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200 transition-all shadow-sm"
                                     />
                                     {searchQuery && (
                                         <button
@@ -210,7 +210,7 @@ export default function GymsPage() {
                                                 setCityDropdownOpen(!cityDropdownOpen);
                                                 setDisciplineDropdownOpen(false);
                                             }}
-                                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 transition-all min-w-[160px] justify-between"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all min-w-[160px] justify-between shadow-sm"
                                         >
                                             <span className="flex items-center gap-2">
                                                 <MapPin className="w-4 h-4 text-octagon-red" />
@@ -225,7 +225,7 @@ export default function GymsPage() {
                                                     initial={{ opacity: 0, y: -10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -10 }}
-                                                    className="absolute top-full left-0 mt-2 w-full bg-neutral-900 border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                    className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden"
                                                 >
                                                     {cities.map((city) => (
                                                         <button
@@ -236,8 +236,8 @@ export default function GymsPage() {
                                                             }}
                                                             className={`w-full px-4 py-2.5 text-left text-sm transition-all ${
                                                                 selectedCity === city
-                                                                    ? "bg-octagon-red text-white"
-                                                                    : "text-gray-300 hover:bg-white/10"
+                                                                    ? "bg-red-600 text-white"
+                                                                    : "text-gray-700 hover:bg-gray-50"
                                                             }`}
                                                         >
                                                             {city}
@@ -255,7 +255,7 @@ export default function GymsPage() {
                                                 setDisciplineDropdownOpen(!disciplineDropdownOpen);
                                                 setCityDropdownOpen(false);
                                             }}
-                                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 transition-all min-w-[140px] justify-between"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all min-w-[140px] justify-between shadow-sm"
                                         >
                                             <span className="flex items-center gap-2">
                                                 <Dumbbell className="w-4 h-4 text-octagon-gold" />
@@ -270,7 +270,7 @@ export default function GymsPage() {
                                                     initial={{ opacity: 0, y: -10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -10 }}
-                                                    className="absolute top-full left-0 mt-2 w-full bg-neutral-900 border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                    className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden"
                                                 >
                                                     {disciplines.map((discipline) => (
                                                         <button
@@ -281,8 +281,8 @@ export default function GymsPage() {
                                                             }}
                                                             className={`w-full px-4 py-2.5 text-left text-sm transition-all ${
                                                                 selectedDiscipline === discipline
-                                                                    ? "bg-octagon-red text-white"
-                                                                    : "text-gray-300 hover:bg-white/10"
+                                                                    ? "bg-red-600 text-white"
+                                                                    : "text-gray-700 hover:bg-gray-50"
                                                             }`}
                                                         >
                                                             {discipline}
@@ -294,7 +294,7 @@ export default function GymsPage() {
                                     </div>
 
                                     {/* Sort Options */}
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg">
+                                    <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
                                         <span className="text-xs text-gray-500 uppercase">Sort:</span>
                                         {(["rating", "reviews", "name"] as SortOption[]).map((option) => (
                                             <button
@@ -302,8 +302,8 @@ export default function GymsPage() {
                                                 onClick={() => setSortBy(option)}
                                                 className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all ${
                                                     sortBy === option
-                                                        ? "bg-octagon-red text-white"
-                                                        : "text-gray-400 hover:text-white"
+                                                        ? "bg-red-600 text-white"
+                                                        : "text-gray-500 hover:text-gray-900"
                                                 }`}
                                             >
                                                 {option}
@@ -312,11 +312,11 @@ export default function GymsPage() {
                                     </div>
 
                                     {/* View Toggle */}
-                                    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                                    <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                                         <button
                                             onClick={() => setViewMode("list")}
                                             className={`px-3 py-2 transition-all ${
-                                                viewMode === "list" ? "bg-octagon-red text-white" : "text-gray-400 hover:text-white"
+                                                viewMode === "list" ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-900"
                                             }`}
                                             title="List View"
                                         >
@@ -325,7 +325,7 @@ export default function GymsPage() {
                                         <button
                                             onClick={() => setViewMode("map")}
                                             className={`px-3 py-2 transition-all ${
-                                                viewMode === "map" ? "bg-octagon-red text-white" : "text-gray-400 hover:text-white"
+                                                viewMode === "map" ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-900"
                                             }`}
                                             title="Map View"
                                         >
@@ -337,7 +337,7 @@ export default function GymsPage() {
                                     <button
                                         onClick={handleGeolocation}
                                         disabled={locatingUser}
-                                        className="px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                        className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 hover:bg-red-100 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
                                     >
                                         {locatingUser ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -362,8 +362,8 @@ export default function GymsPage() {
 
                                 {/* Results Count */}
                                 <div className="text-center text-sm text-gray-500">
-                                    Found <span className="text-white font-bold">{filteredGyms.length}</span> gym{filteredGyms.length !== 1 ? "s" : ""}
-                                    {selectedCity !== "All Cities" && <span> in <span className="text-octagon-red">{selectedCity}</span></span>}
+                                    Found <span className="text-gray-900 font-bold">{filteredGyms.length}</span> gym{filteredGyms.length !== 1 ? "s" : ""}
+                                    {selectedCity !== "All Cities" && <span> in <span className="text-red-600">{selectedCity}</span></span>}
                                 </div>
                             </div>
 
@@ -453,8 +453,8 @@ function GymCard({ gym, index }: { gym: GymData; index: number }) {
             className="h-full"
         >
             <Card
-                variant="glass"
-                className="overflow-hidden group h-full transition-all duration-300 hover:border-octagon-red/50"
+                variant="default"
+                className="overflow-hidden group h-full transition-all duration-300 hover:border-red-200 hover:shadow-md"
             >
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
@@ -487,7 +487,7 @@ function GymCard({ gym, index }: { gym: GymData; index: number }) {
 
                 {/* Content */}
                 <div className="p-5">
-                    <h3 className="text-lg font-display uppercase text-white group-hover:text-octagon-red transition-colors mb-1">
+                    <h3 className="text-lg font-display uppercase text-gray-900 group-hover:text-red-600 transition-colors mb-1">
                         {gym.name}
                     </h3>
                     <p className="text-sm text-gray-500 mb-3">{gym.area}</p>
@@ -497,7 +497,7 @@ function GymCard({ gym, index }: { gym: GymData; index: number }) {
                         {gym.disciplines.map((discipline) => (
                             <span
                                 key={discipline}
-                                className="text-[10px] bg-white/10 text-gray-300 px-2 py-1 rounded-full uppercase font-bold tracking-wider"
+                                className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-full uppercase font-bold tracking-wider"
                             >
                                 {discipline}
                             </span>
@@ -531,7 +531,7 @@ function GymCard({ gym, index }: { gym: GymData; index: number }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-4 border-t border-white/10">
+                    <div className="flex gap-2 pt-4 border-t border-gray-100">
                         <a
                             href={`tel:${gym.phone}`}
                             className="flex-1"

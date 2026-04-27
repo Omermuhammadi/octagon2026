@@ -12,6 +12,15 @@ import statsRoutes from './stats';
 import strategyRoutes from './strategy';
 import coachRosterRoutes from './coachRoster';
 import fighterTrainingRoutes from './fighterTraining';
+import relationshipRoutes from './relationships';
+import assignmentRoutes from './assignments';
+import messageRoutes from './messages';
+import activityRoutes from './activity';
+import fightCampRoutes from './fightCamp';
+import weightCutRoutes from './weightCut';
+import opponentDossierRoutes from './opponentDossier';
+import coachAnalyticsRoutes from './coachAnalytics';
+import analyticsRoutes from './analytics';
 
 const router = Router();
 
@@ -38,5 +47,14 @@ router.use('/stats', statsRoutes);
 router.use('/strategy', strategyRoutes);
 router.use('/coach/roster', coachRosterRoutes);
 router.use('/coach/fighter-training', fighterTrainingRoutes);
+router.use('/relationships', relationshipRoutes);
+router.use('/assignments', assignmentRoutes);
+router.use('/messages', messageRoutes);
+router.use('/activity', activityRoutes);
+router.use('/fight-camp', fightCampRoutes);
+router.use('/weight-cut', weightCutRoutes);
+router.use('/opponent-dossier', opponentDossierRoutes);
+router.use('/coach', coachAnalyticsRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;

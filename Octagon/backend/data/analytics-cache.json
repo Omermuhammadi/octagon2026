@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-04-27T12:14:30.610Z",
+  "methodology": {
+    "weightClassAccuracy": "Model-vs-proxy agreement over sampled in-class fighter pairs using career win-rate as oracle proxy.",
+    "styleMatrix": "Model-implied stylistic bias matrix over sampled cross-style pairings. Diagonal fixed at 0.50 for symmetry.",
+    "samplePolicy": {
+      "weightClassPairsPerClassMax": 200,
+      "stylePairsPerMatchupMax": 100,
+      "rngSeed": 20260427
+    }
+  },
+  "weightClassAccuracy": [
+    {
+      "weightClass": "Heavyweight",
+      "accuracy": 0.685,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Light Heavyweight",
+      "accuracy": 0.645,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Middleweight",
+      "accuracy": 0.715,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Welterweight",
+      "accuracy": 0.615,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Lightweight",
+      "accuracy": 0.665,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Featherweight",
+      "accuracy": 0.69,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Bantamweight",
+      "accuracy": 0.73,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Flyweight",
+      "accuracy": 0.63,
+      "sampleSize": 200
+    },
+    {
+      "weightClass": "Strawweight",
+      "accuracy": 0.675,
+      "sampleSize": 200
+    }
+  ],
+  "styleMatrix": {
+    "Striker": {
+      "Striker": 0.5,
+      "Grappler": 0.58,
+      "Well-Rounded": 0.75
+    },
+    "Grappler": {
+      "Striker": 0.55,
+      "Grappler": 0.5,
+      "Well-Rounded": 0.76
+    },
+    "Well-Rounded": {
+      "Striker": 0.28,
+      "Grappler": 0.32,
+      "Well-Rounded": 0.5
+    }
+  },
+  "styleClassificationRules": {
+    "Striker": "slpm > 4.0 AND takedown_avg < 1.5",
+    "Grappler": "takedown_avg > 2.5 OR submission_avg > 0.5",
+    "WellRounded": "all others"
+  }
+}

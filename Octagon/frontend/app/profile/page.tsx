@@ -3,11 +3,22 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { User, Mail, Calendar, Target, Award, Edit2, Save, X, Camera, Loader2, Dumbbell, Users, GraduationCap } from "lucide-react";
+import { User, Mail, Calendar, Target, Award, Edit2, Save, X, Camera, Loader2, Dumbbell, Users, GraduationCap, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { authApi, ProfileUpdateData } from "@/lib/api";
+import { authApi, ProfileUpdateData, predictionApi, PredictionRecord } from "@/lib/api";
 import { useRouter } from "next/navigation";
+
+function timeAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return `${Math.floor(days / 30)}mo ago`;
+}
 
 // === FAN/LEARNER OPTIONS ===
 const fanExperienceLevels = ["Beginner", "Intermediate", "Advanced"];
@@ -84,6 +95,7 @@ export default function ProfilePage() {
         accuracyRate: 0,
         daysActive: 0
     });
+    const [recentPredictions, setRecentPredictions] = useState<PredictionRecord[]>([]);
 
     // Load user data into profile state
     useEffect(() => {
@@ -113,6 +125,14 @@ export default function ProfilePage() {
             });
         }
     }, [user, isCoach]);
+
+    // Fetch real prediction history
+    useEffect(() => {
+        if (!token) return;
+        predictionApi.getHistory(token, 1, 5).then(res => {
+            if (res.data) setRecentPredictions(res.data);
+        }).catch(() => {});
+    }, [token]);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -388,31 +408,61 @@ export default function ProfilePage() {
                             </div>
                         </Card>
 
-                        {/* Recent Activity */}
+                        {/* Recent Predictions */}
                         <Card variant="glass" className="p-8 mt-6">
-                            <h3 className="text-2xl font-display uppercase text-white mb-6">Recent Activity</h3>
-                            <div className="space-y-4">
-                                <ActivityItem
-                                    action="Completed training module"
-                                    detail="Week 2: Striking Fundamentals"
-                                    time="2 hours ago"
-                                />
-                                <ActivityItem
-                                    action="Made a prediction"
-                                    detail="Edwards vs Covington - UFC 296"
-                                    time="1 day ago"
-                                />
-                                <ActivityItem
-                                    action="Compared fighters"
-                                    detail="Conor McGregor vs Khabib Nurmagomedov"
-                                    time="2 days ago"
-                                />
-                                <ActivityItem
-                                    action="Form analysis session"
-                                    detail="Jab technique - Score: 85%"
-                                    time="3 days ago"
-                                />
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-2xl font-display uppercase text-white">Recent Predictions</h3>
+                                    {stats.predictionsMade > 0 && (
+                                        <span className="px-2.5 py-1 bg-octagon-red/15 border border-octagon-red/30 text-octagon-red text-xs font-bold rounded-full">
+                                            {stats.predictionsMade} total
+                                        </span>
+                                    )}
+                                </div>
+                                <a href="/prediction" className="flex items-center gap-1 text-xs text-gray-500 hover:text-octagon-red transition-colors font-medium">
+                                    Make prediction <TrendingUp className="w-3.5 h-3.5" />
+                                </a>
                             </div>
+                            {recentPredictions.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <TrendingUp className="w-10 h-10 mx-auto mb-3 text-gray-700" />
+                                    <p className="text-gray-500 text-sm">No predictions yet</p>
+                                    <a href="/prediction" className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-octagon-red hover:bg-octagon-red/80 text-white text-xs font-bold rounded-lg transition-colors">
+                                        <TrendingUp className="w-3.5 h-3.5" /> Run Your First Prediction
+                                    </a>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {recentPredictions.map((p) => (
+                                        <div key={p._id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-8 h-8 rounded-full bg-octagon-red/10 border border-octagon-red/20 flex items-center justify-center flex-shrink-0">
+                                                    <TrendingUp className="w-4 h-4 text-octagon-red" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-white truncate">
+                                                        {p.fighter1Name} <span className="text-gray-600 font-normal">vs</span> {p.fighter2Name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        <span className="text-octagon-red font-medium">{p.predictedWinner}</span>
+                                                        {p.winProbability != null && (
+                                                            <span className="text-gray-600 ml-1">
+                                                                ({p.winProbability > 1 ? Math.round(p.winProbability) : Math.round(p.winProbability * 100)}%)
+                                                            </span>
+                                                        )}
+                                                        {p.method && (
+                                                            <span className="ml-2 text-gray-600">
+                                                                · {p.method}{p.predictedRound > 0 ? ` R${p.predictedRound}` : ''}
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[11px] text-gray-600 flex-shrink-0 ml-3">{timeAgo(p.createdAt)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </Card>
                     </div>
                 </div>
@@ -474,15 +524,3 @@ function ProfileField({
     );
 }
 
-function ActivityItem({ action, detail, time }: { action: string; detail: string; time: string }) {
-    return (
-        <div className="flex items-start gap-4 p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <div className="w-2 h-2 bg-octagon-red rounded-full mt-2 flex-shrink-0" />
-            <div className="flex-1">
-                <p className="text-white font-bold text-sm">{action}</p>
-                <p className="text-gray-400 text-sm">{detail}</p>
-            </div>
-            <span className="text-xs text-gray-500">{time}</span>
-        </div>
-    );
-}

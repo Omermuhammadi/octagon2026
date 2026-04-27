@@ -1,0 +1,529 @@
+{
+  "project": {
+    "name": "Octagon Oracle",
+    "description": "MMA analytics & training platform — Final Year Project (FYP)",
+    "type": "Full-stack web app",
+    "purpose": "Multi-role system for UFC fighters, coaches, beginners, and fans. Core features: ML fight prediction (custom ensemble model 70.7% accuracy), coach-fighter relationship management, fight camp tracking, weight cut monitoring, AI opponent scouting via Groq LLM.",
+    "root": "D:\\octagonNEW\\Octagon"
+  },
+
+  "CRITICAL_STARTUP_SEQUENCE": {
+    "step_1_mongodb": {
+      "note": "MongoDB is NOT a Windows service — must be started manually each session",
+      "binary": "D:\\mongodb\\bin\\mongod.exe",
+      "data_dir": "D:\\mongodb\\data\\db",
+      "log_file": "D:\\mongodb\\mongod.log",
+      "start_command_powershell": "Start-Process -FilePath 'D:\\mongodb\\bin\\mongod.exe' -ArgumentList '--dbpath','D:\\mongodb\\data\\db','--logpath','D:\\mongodb\\mongod.log','--logappend' -WindowStyle Hidden",
+      "verify": "Test-NetConnection -ComputerName localhost -Port 27017 → TcpTestSucceeded: True",
+      "compass_location": "C:\\Users\\Lenovo\\AppData\\Local\\MongoDBCompass\\MongoDBCompass.exe"
+    },
+    "step_2_backend": {
+      "dir": "D:\\octagonNEW\\Octagon\\backend",
+      "command": "npm run dev",
+      "port": 5001,
+      "verify": "GET http://localhost:5001/api/health → 200 OK"
+    },
+    "step_3_frontend": {
+      "dir": "D:\\octagonNEW\\Octagon\\frontend",
+      "command": "npm run dev",
+      "port": 3000,
+      "verify": "http://localhost:3000 loads"
+    },
+    "combined_start": "From D:\\octagonNEW\\Octagon root: npm run dev (uses concurrently to start both)"
+  },
+
+  "tech_stack": {
+    "frontend": {
+      "framework": "Next.js 16 — App Router (NOT pages router)",
+      "react": "React 19",
+      "language": "TypeScript",
+      "styling": "Tailwind CSS v4 — CRITICAL: uses @theme directive in app/globals.css, NOT tailwind.config.ts. NEVER create tailwind.config.ts.",
+      "animations": "Framer Motion 12",
+      "charts": "Recharts (used on weight-cut, comparison, events; NOT used on prediction — replaced with custom Framer Motion bars)",
+      "icons": "lucide-react",
+      "port": 3000,
+      "env_file": "frontend/.env.local — contains NEXT_PUBLIC_API_URL=http://localhost:5001/api"
+    },
+    "backend": {
+      "framework": "Express.js with TypeScript",
+      "runtime": "Node.js",
+      "database": "MongoDB 8.0.6 with Mongoose 8 — local instance at mongodb://localhost:27017/octagon-oracle",
+      "ai": "Groq API — model: llama-3.3-70b-versatile — key in backend/.env",
+      "auth": "JWT — Bearer token in Authorization header",
+      "port": 5001,
+      "start_command": "npm run dev (ts-node-dev)",
+      "env_file": "backend/.env — contains MONGODB_URI, JWT_SECRET, GROQ_API_KEY"
+    },
+    "ml_model": {
+      "type": "Custom Ensemble: Logistic Regression + Gradient Boosted Trees",
+      "accuracy": "70.7% cross-validated",
+      "training_set": "8,424 UFC fights (2010-2024)",
+      "features": 27,
+      "weights_file": "backend/data/model-weights.json",
+      "note": "Model is already trained and loaded at startup. NEVER re-train unless explicitly asked."
+    }
+  },
+
+  "folder_structure": {
+    "root": "D:\\octagonNEW\\Octagon",
+    "backend_src": "D:\\octagonNEW\\Octagon\\backend\\src",
+    "backend_models": "D:\\octagonNEW\\Octagon\\backend\\src\\models",
+    "backend_models_index": "D:\\octagonNEW\\Octagon\\backend\\src\\models\\index.ts",
+    "backend_controllers": "D:\\octagonNEW\\Octagon\\backend\\src\\controllers",
+    "backend_routes": "D:\\octagonNEW\\Octagon\\backend\\src\\routes",
+    "backend_routes_index": "D:\\octagonNEW\\Octagon\\backend\\src\\routes\\index.ts",
+    "backend_services": "D:\\octagonNEW\\Octagon\\backend\\src\\services",
+    "backend_utils": "D:\\octagonNEW\\Octagon\\backend\\src\\utils",
+    "frontend_app": "D:\\octagonNEW\\Octagon\\frontend\\app",
+    "frontend_components": "D:\\octagonNEW\\Octagon\\frontend\\components",
+    "frontend_lib": "D:\\octagonNEW\\Octagon\\frontend\\lib\\api.ts",
+    "frontend_contexts": "D:\\octagonNEW\\Octagon\\frontend\\contexts\\AuthContext.tsx",
+    "frontend_globals_css": "D:\\octagonNEW\\Octagon\\frontend\\app\\globals.css"
+  },
+
+  "critical_patterns": {
+    "api_helper": "Use apiRequest<T>() from frontend/lib/api.ts for ALL frontend API calls. Response shape: { success, data?, message?, pagination? }",
+    "auth_token": "getAuthToken() from @/contexts/AuthContext — call inside useEffect or event handlers ONLY, never at module level",
+    "useAuth_hook": "const { user, isAuthenticated, isLoading, token, logout, refreshUser } = useAuth()",
+    "protected_routes": "All protected backend routes use: import { protect } from '../middleware/auth' — add as middleware",
+    "activity_logging": "Use logActivity() from backend/src/utils/activityLogger.ts — wraps in try/catch, NEVER throws",
+    "tailwind_v4_warning": "NEVER add tailwind.config.ts. Custom colors like octagon-red defined in globals.css @theme {} block.",
+    "typescript_es2022": "Backend tsconfig targets ES2022 — avoid ES2023 features like findLast(). Use .filter().pop() instead.",
+    "stale_closure_fix": "Always extract res.data to a local const BEFORE async callbacks to avoid stale closure bugs",
+    "page_client_directive": "All Next.js App Router pages that use hooks MUST have 'use client' at top",
+    "imports_prefix": "Frontend imports use @/ mapped to frontend/ root (e.g., @/lib/api, @/contexts/AuthContext)",
+    "suspense_for_searchparams": "Any page using useSearchParams MUST be wrapped in <Suspense>. See opponent-dossier/page.tsx for the pattern.",
+    "new_model_in_index": "When adding a new Mongoose model: export it from backend/src/models/index.ts",
+    "new_route_in_index": "When adding new routes: import + mount in backend/src/routes/index.ts",
+    "response_extraction": "TypeScript: const d = res.data; then use d.field — avoids 'possibly undefined' errors"
+  },
+
+  "authentication": {
+    "register": "POST /api/auth/register — { name, email, password, role }",
+    "login": "POST /api/auth/login — { email, password }",
+    "profile": "GET /api/auth/me — Bearer token",
+    "profile_update": "PATCH /api/auth/profile — Bearer token + any profile fields",
+    "roles": ["fighter", "coach", "beginner", "fan"],
+    "token_storage": "localStorage key: 'token'",
+    "dashboard_routing": {
+      "coach": "/dashboard/coach",
+      "fighter": "/dashboard/fighter",
+      "beginner": "/dashboard/beginner",
+      "fan": "/dashboard/fan",
+      "file": "frontend/app/dashboard/page.tsx — reads user.role and calls router.replace()"
+    }
+  },
+
+  "database_schemas": {
+    "User": {
+      "file": "backend/src/models/User.ts",
+      "fields": {
+        "name": "String required",
+        "email": "String unique required",
+        "password": "String (bcrypt hashed)",
+        "role": "'fighter' | 'coach' | 'beginner' | 'fan'",
+        "experienceLevel": "'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'",
+        "trainingGoal": "'Self-Defense' | 'Fitness' | 'Competition Preparation' | 'Professional Fighting'",
+        "discipline": "'MMA' | 'BJJ' | 'Muay Thai' | 'Boxing' | 'Karate' | 'Wrestling'",
+        "weight": "String (weight class label)",
+        "height": "String",
+        "location": "String",
+        "predictionsMade": "Number",
+        "trainingSessions": "Number",
+        "accuracyRate": "Number",
+        "daysActive": "Number"
+      }
+    },
+    "Fighter": {
+      "file": "backend/src/models/Fighter.ts",
+      "description": "UFC celebrity fighter DB (8,424 records) — NOT User accounts. Used for prediction/comparison/scouting.",
+      "key_fields": ["name", "wins", "losses", "draws", "slpm", "strikingAccuracy", "sapm", "strikingDefense", "takedownAvg", "takedownAccuracy", "takedownDefense", "submissionAvg", "reach", "weightClass", "stance"]
+    },
+    "CoachRelationship": {
+      "file": "backend/src/models/CoachRelationship.ts",
+      "fields": {
+        "coachId": "ObjectId ref User",
+        "traineeId": "ObjectId ref User",
+        "status": "'pending' | 'active' | 'declined' | 'ended'",
+        "requestedBy": "'coach' | 'trainee'",
+        "traineeRole": "'fighter' | 'beginner'"
+      },
+      "index": "unique compound on (coachId, traineeId)"
+    },
+    "Conversation": {
+      "file": "backend/src/models/Conversation.ts",
+      "fields": {
+        "participants": "ObjectId[]",
+        "participantKey": "String — sorted 'id1_id2' pair (unique dedup index)",
+        "lastMessage": "{ text, senderId, timestamp }",
+        "unreadCounts": "Map<userId, number>"
+      }
+    },
+    "Message": {
+      "file": "backend/src/models/Message.ts",
+      "fields": ["conversationId", "senderId", "recipientId", "text", "read", "readAt"]
+    },
+    "Assignment": {
+      "file": "backend/src/models/Assignment.ts",
+      "fields": {
+        "coachId": "ObjectId",
+        "traineeId": "ObjectId",
+        "title": "String",
+        "type": "'training' | 'video' | 'weight' | 'reading' | 'sparring' | 'custom'",
+        "status": "'assigned' | 'submitted' | 'completed' | 'overdue'",
+        "dueDate": "Date",
+        "submission": "{ text, submittedAt }",
+        "feedback": "{ text, rating 1-5, reviewedAt }"
+      }
+    },
+    "ActivityLog": {
+      "file": "backend/src/models/ActivityLog.ts",
+      "actions": [
+        "relationship_requested", "relationship_accepted", "relationship_declined", "relationship_ended",
+        "assignment_created", "assignment_submitted", "assignment_completed", "assignment_overdue",
+        "message_received", "training_week_completed", "prediction_made",
+        "fight_camp_created", "weight_alert"
+      ],
+      "entity_types": ["relationship", "assignment", "message", "training", "prediction", "fight_camp", "weight_log"]
+    },
+    "FightCamp": {
+      "file": "backend/src/models/FightCamp.ts",
+      "fields": {
+        "userId": "ObjectId ref User (the fighter)",
+        "coachId": "ObjectId ref User (optional — pulled from active CoachRelationship on create)",
+        "opponentName": "String",
+        "opponentRecord": "String",
+        "fightDate": "Date",
+        "weightClass": "String",
+        "venue": "String",
+        "status": "'upcoming' | 'active' | 'completed' | 'cancelled'",
+        "milestones": "IMilestone[] — 10 auto-generated on create with evenly-spaced targetDates",
+        "notes": "String"
+      },
+      "IMilestone": "{ _id, title, targetDate, completed: false, completedAt?, notes? }"
+    },
+    "WeightLog": {
+      "file": "backend/src/models/WeightLog.ts",
+      "important": "unique:true on userId — ONE document per user, entries are embedded array",
+      "fields": {
+        "userId": "ObjectId (unique index)",
+        "fightCampId": "ObjectId optional",
+        "targetWeightKg": "Number",
+        "alertThresholdKg": "Number (default: 3 — coach alerted when fighter exceeds target by this amount)",
+        "entries": "{ date: Date, weightKg: Number, notes?: String }[]"
+      }
+    },
+    "SparringEntry": {
+      "file": "backend/src/models/SparringEntry.ts",
+      "fields": {
+        "userId": "ObjectId",
+        "fightCampId": "ObjectId optional",
+        "date": "Date",
+        "partnerName": "String",
+        "rounds": "Number",
+        "performanceRating": "1 | 2 | 3 | 4 | 5",
+        "tags": "String[] — from: striking | grappling | clinch | cardio | defense | ground",
+        "notes": "String"
+      }
+    },
+    "Prediction": {
+      "file": "backend/src/models/Prediction.ts",
+      "fields": ["userId", "fighter1Name", "fighter2Name", "predictedWinner", "winProbability", "method", "predictedRound", "confidence", "factors[]"]
+    }
+  },
+
+  "api_endpoints": {
+    "auth": {
+      "POST /api/auth/register": "{ name, email, password, role }",
+      "POST /api/auth/login": "{ email, password } → { user, token }",
+      "GET /api/auth/me": "Bearer → user object",
+      "PATCH /api/auth/profile": "Bearer + any profile fields"
+    },
+    "predictions": {
+      "POST /api/predictions": "Bearer + { fighter1Name, fighter2Name } → PredictionResult with topFactors[5] (each has factor, description, absContrib, direction:'positive'|'negative'), modelStats (modelType, samples, features, cvAccuracy, lastTrained), counterfactual",
+      "GET /api/predictions/history": "Bearer → PredictionRecord[]"
+    },
+    "relationships": {
+      "GET /api/relationships": "Bearer → list all relationships for current user",
+      "POST /api/relationships": "Bearer coach → { traineeEmail } invite trainee",
+      "PATCH /api/relationships/:id/respond": "Bearer trainee → { action: 'accept'|'decline' }",
+      "DELETE /api/relationships/:id": "Bearer → end relationship",
+      "GET /api/relationships/trainees": "Bearer coach → TraineeSummary[]",
+      "GET /api/relationships/my-coach": "Bearer trainee → MyCoach | null"
+    },
+    "assignments": {
+      "GET /api/assignments": "Bearer → list (role-aware: coach sees sent, trainee sees received)",
+      "POST /api/assignments": "Bearer coach → create",
+      "GET /api/assignments/:id": "Bearer → single",
+      "PATCH /api/assignments/:id/submit": "Bearer trainee → { text }",
+      "PATCH /api/assignments/:id/review": "Bearer coach → { feedback: { text, rating } }",
+      "DELETE /api/assignments/:id": "Bearer coach",
+      "GET /api/assignments/stats": "Bearer → AssignmentStats"
+    },
+    "messages": {
+      "GET /api/messages/conversations": "Bearer → ConversationSummary[]",
+      "GET /api/messages/thread/:userId": "Bearer → full thread (auto-creates Conversation)",
+      "POST /api/messages/thread/:userId": "Bearer + { text } → ChatMessage",
+      "GET /api/messages/unread-count": "Bearer → { count }"
+    },
+    "activity": {
+      "GET /api/activity": "Bearer → ActivityItem[]",
+      "PATCH /api/activity/read": "Bearer → mark all read",
+      "GET /api/activity/unread-count": "Bearer → { count }"
+    },
+    "fight_camp": {
+      "POST /api/fight-camp": "Bearer → create camp (auto-generates 10 milestones, sets coachId from active relationship)",
+      "GET /api/fight-camp": "Bearer → active camp or null",
+      "GET /api/fight-camp/all": "Bearer → all camps",
+      "PATCH /api/fight-camp/:id/status": "Bearer + { status }",
+      "PATCH /api/fight-camp/:id/milestone/:milestoneId": "Bearer + { completed, notes? }",
+      "POST /api/fight-camp/sparring": "Bearer + sparring fields → SparringEntry",
+      "GET /api/fight-camp/sparring": "Bearer → entries (optional ?fightCampId=)",
+      "DELETE /api/fight-camp/sparring/:id": "Bearer"
+    },
+    "weight_cut": {
+      "POST /api/weight-cut/log": "Bearer + { weightKg, date?, notes? } — fires coach alert activity if overTarget > alertThresholdKg",
+      "GET /api/weight-cut/history": "Bearer → WeightLogData (entries sorted ASC for chart)",
+      "PUT /api/weight-cut/target": "Bearer + { targetWeightKg, alertThresholdKg? }",
+      "DELETE /api/weight-cut/entry/:entryId": "Bearer"
+    },
+    "opponent_dossier": {
+      "GET /api/opponent-dossier/search?q=": "Bearer → Fighter[] from UFC DB (limit 8)",
+      "POST /api/opponent-dossier/generate": "Bearer + { opponentName, fightCampId? } → { opponentStats: Fighter, gamePlan: string (Groq markdown), generatedAt }"
+    },
+    "fighters": {
+      "GET /api/fighters/search?q=&limit=": "UFC fighter search (no auth)",
+      "GET /api/fighters/:id": "Single fighter"
+    },
+    "events": {
+      "GET /api/events?page=&limit=&status=": "Paginated events (status: upcoming|completed|undefined=all)",
+      "GET /api/events/:id/fightcard": "Fight card entries for event",
+      "POST /api/events/sync": "Bearer admin → sync from external source"
+    },
+    "stats": {
+      "GET /api/stats/user": "Bearer → { predictionsMade, trainingSessions, daysActive, accuracyRate }"
+    }
+  },
+
+  "frontend_pages": {
+    "/": "Landing page (public) — hero section, features, CTA",
+    "/(auth)/login": "Login page",
+    "/(auth)/register": "Role selection + registration",
+    "/(auth)/forgot-password": "Password reset",
+    "/dashboard": "Role router — reads user.role, redirects to correct sub-dashboard",
+    "/dashboard/coach": "Coach dashboard — stats, ConnectionHub widget, assignment overview, strategy CTA",
+    "/dashboard/fighter": "Fighter dashboard — stats, ConnectionHub, Fight Camp countdown widget, Weight Cut strip, AI Game Plan quick action",
+    "/dashboard/beginner": "Beginner dashboard — onboarding quiz (PATCH /auth/profile on complete), roadmap card, resources",
+    "/dashboard/fan": "Fan dashboard — stats, quick actions, predictions CTA",
+    "/connections": "Invite by email, accept/decline/end relationships",
+    "/assignments": "Role-aware: coach creates/reviews, trainee submits",
+    "/messages": "2-panel: conversation list + thread. Polls 8s. ?with=userId param.",
+    "/fight-camp": "Fight camp — countdown, 10-milestone checklist (click-to-toggle), sparring journal with star ratings + tags",
+    "/weight-cut": "Daily weight log — Recharts AreaChart with target ReferenceLine, entry history, alert banner",
+    "/opponent-dossier": "UFC search → stat bars (Framer Motion) → AI game plan (markdown rendered). Quick-select chips. Suspense wrapper for useSearchParams.",
+    "/prediction": "Fighter vs fighter — ?f1=&f2= URL params auto-populate. Result: probability bars, Explainable AI section (animated green/red factor bars), counterfactual amber card, Model Transparency panel (open by default).",
+    "/comparison": "Radar chart (8 metrics), style badges (Striker/Grappler/Well-Rounded), head-to-head table",
+    "/training": "Training roadmap — experience levels + disciplines",
+    "/events": "UFC events — 3 tabs with correct counts (prefetched on mount), Predict buttons → /prediction?f1=&f2=",
+    "/profile": "User profile — stats, recent activity (currently uses hardcoded data — Phase 3.5 target)",
+    "/strategy": "Strategy analysis",
+    "/form-check": "AI form check with pose analysis",
+    "/gear": "Gear shop",
+    "/gyms": "Gym finder",
+    "/self-defense": "Self-defense resources"
+  },
+
+  "frontend_components": {
+    "Navbar": {
+      "file": "frontend/components/Navbar.tsx",
+      "notes": "Role-aware nav links. Fighter: DASHBOARD,FIGHT CAMP,WEIGHT CUT,DOSSIER,ASSIGNMENTS,MESSAGES,TRAINING. Beginner: DASHBOARD,MY COACH,ASSIGNMENTS,MESSAGES,TRAINING,FORM CHECK,EVENTS. Coach: DASHBOARD,ROSTER,ASSIGNMENTS,MESSAGES,STRATEGY,EVENTS. Fan: DASHBOARD,PREDICTION,COMPARISON,EVENTS,TRAINING."
+    },
+    "ConnectionHub": {
+      "file": "frontend/components/ConnectionHub.tsx",
+      "notes": "Dashboard widget — relationship roster, pending invites, assignment preview, activity feed. Used on coach/fighter/beginner dashboards."
+    },
+    "Chatbot": {
+      "file": "frontend/components/Chatbot.tsx",
+      "notes": "Currently small 360x580px floating bubble. Has markdown rendering + role-aware chips + history. NEEDS redesign to full-height right panel (Phase 3.4)."
+    },
+    "FighterRadarChart": {
+      "file": "frontend/components/charts/FighterRadarChart.tsx",
+      "notes": "8-metric radar chart. Fighter A = red, Fighter B = blue. Used on /comparison."
+    }
+  },
+
+  "lib_api_ts": {
+    "file": "frontend/lib/api.ts",
+    "key_exports": [
+      "apiRequest<T>() — core fetch wrapper",
+      "authApi — register, login, getProfile, updateProfile",
+      "fighterApi — search, getById",
+      "predictionApi — predict, getHistory",
+      "eventApi — getEvents, getFightCard",
+      "statsApi — getUserStats",
+      "relationshipApi — CRUD for CoachRelationship",
+      "assignmentApi — CRUD + submit + review",
+      "messageApi — conversations, thread, send, unreadCount",
+      "activityApi — getActivity, markRead, unreadCount",
+      "fightCampApi — create, getActive, listAll, updateMilestone, updateStatus, addSparring, listSparring, deleteSparring",
+      "weightCutApi — logWeight, getHistory, setTarget, deleteEntry",
+      "opponentDossierApi — search, generate"
+    ],
+    "interfaces": [
+      "PredictionResult — includes topFactors[{ factor, description, absContrib, direction:'positive'|'negative' }] + modelStats + counterfactual",
+      "FightCamp, Milestone, SparringEntry",
+      "WeightEntry, WeightLogData",
+      "OpponentStats, DossierResult"
+    ]
+  },
+
+  "phases_completed": {
+    "phase_1": {
+      "name": "Stakeholder Connection Layer",
+      "status": "COMPLETE — 22/22 gate tests passing",
+      "what_was_built": [
+        "CoachRelationship model — invite by email, accept/decline/end, status tracking",
+        "Assignment model + CRUD — type/status/submission/feedback flow",
+        "Conversation + Message models — dedup via participantKey, unread tracking",
+        "ActivityLog model + logActivity() utility",
+        "Controllers + routes: relationships, assignments, messages, activity",
+        "Frontend: /connections, /assignments, /messages pages",
+        "ConnectionHub dashboard widget",
+        "Navbar updated with role-specific links for all 4 roles"
+      ]
+    },
+    "phase_2": {
+      "name": "Fighter Fight Camp Suite",
+      "status": "COMPLETE — 15/15 gate tests passing",
+      "what_was_built": [
+        "FightCamp model — opponent, fight date, weight class, 10 auto-generated milestones",
+        "WeightLog model — per-user daily weigh-in log (unique per userId), target, alert threshold",
+        "SparringEntry model — date, partner, rounds, rating 1-5, focus tags",
+        "fightCampController — create camp, milestone toggle, sparring CRUD",
+        "weightCutController — log weight, history, set target, coach alert via activityLogger",
+        "opponentDossierController — UFC DB search + Groq AI game plan (graceful fallback if no key)",
+        "Routes: /api/fight-camp, /api/weight-cut, /api/opponent-dossier",
+        "Frontend /fight-camp — countdown timer, milestones, sparring journal",
+        "Frontend /weight-cut — AreaChart with target line, daily log, alert banner",
+        "Frontend /opponent-dossier — search, stat bars, markdown game plan",
+        "Fighter dashboard: Fight Camp countdown widget + Weight Cut strip",
+        "Navbar: fighter role gets FIGHT CAMP, WEIGHT CUT, DOSSIER links"
+      ]
+    },
+    "phase_3_1": {
+      "name": "Prediction — Explainable AI",
+      "status": "COMPLETE — builds clean, TypeScript zero errors",
+      "what_was_built": [
+        "Feature importance bars: custom Framer Motion animated bars (replaced Recharts BarChart)",
+        "Green bars = direction:positive (favours predicted winner), Red bars = direction:negative (disadvantage overcome)",
+        "Staggered bar animation: delay 0.4 + i*0.07s, bars grow left to right",
+        "Heading: 'Why the model picked [winner name]' — dynamic, contextual",
+        "Legend: coloured dots + 'Favours [winner] / Disadvantage overcome' + 'Ensemble (LR+GBT) · N factors'",
+        "Counterfactual: standalone amber card below bars (not buried in collapsible)",
+        "Model Transparency panel: open by default, Academic badge, ensemble prose explanation",
+        "CV accuracy display fix: handles both decimal (0.707) and percent (70.7) forms",
+        "TypeScript: added direction field to topFactors in api.ts PredictionResult interface",
+        "Events page: parallel prefetch of all 3 tab counts on mount"
+      ],
+      "key_file": "D:\\octagonNEW\\Octagon\\frontend\\app\\prediction\\page.tsx"
+    }
+  },
+
+  "phases_remaining": {
+    "phase_3_2": {
+      "name": "Coach Analytics Dashboard",
+      "priority": "HIGH — implement this first",
+      "description": "Coaches currently have zero visibility into trainees' fight camp + weight data. Build a real analytics section on the coach dashboard.",
+      "backend": {
+        "new_file": "backend/src/controllers/coachAnalyticsController.ts",
+        "new_route_file": "backend/src/routes/coachAnalytics.ts",
+        "mount_in": "backend/src/routes/index.ts → router.use('/coach', coachAnalyticsRoutes)",
+        "endpoint": "GET /api/coach/trainee-analytics (Bearer — coach only)",
+        "logic": "1. Get active trainees: CoachRelationship.find({ coachId, status:'active' }). 2. For each trainee: a) Latest WeightLog entry + target (WeightLog.findOne({ userId: trainee._id })). b) Assignment completion %: Assignment.find({ coachId, traineeId }).count() vs completed count. c) Sparring count this week: SparringEntry.find({ userId, date >= startOfWeek }). d) Active FightCamp: FightCamp.findOne({ userId, status: active|upcoming }). 3. Return TraineeAnalytics[].",
+        "return_shape": "{ trainees: [{ traineeId, name, role, weight: { current, target, overTarget }, assignmentCompletionPct, sparringThisWeek, fightCamp: { opponentName, fightDate, daysRemaining, milestonesCompleted, milestonesTotal } | null }] }"
+      },
+      "frontend": {
+        "file": "D:\\octagonNEW\\Octagon\\frontend\\app\\dashboard\\coach\\page.tsx",
+        "add_section_below": "ConnectionHub widget",
+        "components_to_add": [
+          "TraineeAnalyticsGrid: card per trainee — weight badge (green=on target, red=over), assignment completion % bar, sparring count this week, fight camp status chip",
+          "Recharts BarChart: one bar per trainee showing assignment completion %, color: green(>80%) amber(50-79%) red(<50%)",
+          "WeightBadge: shows current/target and diff in kg, red if over alertThreshold"
+        ],
+        "api_to_add_in_lib_api_ts": "coachAnalyticsApi.getTraineeAnalytics(token)"
+      },
+      "why_it_matters": "End-to-end role data flow. Coach sees fighter's weight alert and can click → /messages to reach them. Evaluators ask 'what do coaches actually see?' — now there's a compelling data-driven answer."
+    },
+    "phase_3_4": {
+      "name": "Chatbot — Full-Height Side Panel",
+      "priority": "HIGH",
+      "file": "D:\\octagonNEW\\Octagon\\frontend\\components\\Chatbot.tsx",
+      "current_state": "360×580px fixed bubble. Has: markdown rendering, role-aware chips, basic history.",
+      "changes_needed": [
+        "Layout: replace bubble with full-height right panel — fixed right-0 top-0 h-screen w-[420px] z-50 bg-[#111] border-l border-gray-800",
+        "Animation: Framer Motion motion.div with initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }} transition={{ type:'spring', damping:28 }}",
+        "Backdrop: when open, render <motion.div className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40' onClick={close} />",
+        "Persistence: localStorage key `chat_${user._id}` — load on mount, save on each message",
+        "Context injection: before every API call, prepend '[Role: X | Discipline: Y | Camp: active/none | Last prediction: A vs B → C wins]' to user message",
+        "Backend chatController.ts: ensure system prompt accepts userContext fields (already has framework, just verify)"
+      ]
+    },
+    "phase_3_5": {
+      "name": "Profile — Real Prediction History",
+      "priority": "MEDIUM",
+      "file": "D:\\octagonNEW\\Octagon\\frontend\\app\\profile\\page.tsx",
+      "current_state": "Lines ~394-416 have HARDCODED fake activity: 'Edwards vs Covington — UFC 296 — 2 hours ago'",
+      "fix": "On mount: call predictionApi.getHistory(token). Map last 5 records to activity list with real fighter names + real timestamps via toLocaleDateString(). Show total prediction count."
+    }
+  },
+
+  "known_issues_and_gotchas": {
+    "mongodb_not_a_service": "MongoDB is NOT installed as a Windows service. Must start mongod.exe manually each session. See CRITICAL_STARTUP_SEQUENCE above.",
+    "tailwind_v4": "NEVER create tailwind.config.ts. Custom colors (octagon-red etc.) defined in globals.css @theme {} block.",
+    "activity_logger_never_throws": "logActivity() is fire-and-forget. Always wrapped in try/catch in the utility itself.",
+    "conversation_dedup": "buildParticipantKey() sorts two user IDs alphabetically and joins with _. Unique index on Conversation.",
+    "messaging_restriction": "canMessage() in messageController checks CoachRelationship.status=active. Fans cannot message anyone.",
+    "weight_log_upsert": "WeightLog has unique:true on userId. Always use findOneAndUpdate({ userId }, ..., { upsert:true }). Never Model.create() for weight logs.",
+    "fight_camp_milestones": "10 milestones auto-generated on create with evenly-spaced targetDates from now to fightDate.",
+    "prediction_confidence": "confidence = Math.round(winProb * 100). Was (winProb-0.5)*200 before — that was wrong.",
+    "cv_accuracy_format": "cvAccuracy may be 0.707 (decimal) or 70.7 (percent). Frontend handles both: value > 1 ? value.toFixed(1) : (value*100).toFixed(1).",
+    "prediction_no_recharts": "Prediction page no longer uses Recharts for feature importance. Uses custom Framer Motion bars. Old import is commented out.",
+    "events_tab_counts": "Fixed: parallel mount prefetch. Each tab uses getEvents(page:1, limit:1, status) just to get pagination.total.",
+    "useSearchParams_suspense": "All pages using useSearchParams must be inside <Suspense>. Pattern in opponent-dossier/page.tsx.",
+    "no_git_worktrees": "Work directly on main branch. No worktrees.",
+    "frontend_env": "frontend/.env.local contains NEXT_PUBLIC_API_URL=http://localhost:5001/api — required for API calls to work."
+  },
+
+  "demo_flow_for_evaluators": {
+    "step_1": "Register as Beginner → onboarding quiz appears → completes → PATCH /auth/profile with discipline + experienceLevel",
+    "step_2": "Register as Fighter → fighter dashboard with Fight Camp countdown widget + Weight Cut strip",
+    "step_3": "Fighter creates Fight Camp → 10 milestones auto-generated → toggle milestones complete → go to /opponent-dossier for AI game plan",
+    "step_4": "Fighter logs daily weight → /weight-cut shows area chart trend vs target",
+    "step_5": "/events → correct tab counts → click Predict on main event → prediction page auto-fills fighters",
+    "step_6": "Run prediction → animated green/red feature importance bars → amber counterfactual → Model Transparency panel showing Ensemble (LR+GBT) 8,424 fights 70.7% accuracy",
+    "step_7": "[PHASE 3.2 — BUILD NEXT] Switch to Coach → see Trainee Analytics section with weight compliance + assignment completion bars",
+    "step_8": "[PHASE 3.4] Open Chatbot → full-height right panel slides in with backdrop blur → context-aware response"
+  },
+
+  "next_session_instructions": {
+    "START_WITH": "Phase 3.2 — Coach Analytics Dashboard",
+    "step_1_read": "Read D:\\octagonNEW\\Octagon\\backend\\src\\controllers\\coachRelationshipController.ts to understand how trainee lists are fetched, then build GET /api/coach/trainee-analytics",
+    "step_2_read": "Read D:\\octagonNEW\\Octagon\\frontend\\app\\dashboard\\coach\\page.tsx to find where to insert the analytics section (after ConnectionHub)",
+    "step_3_read": "Read D:\\octagonNEW\\Octagon\\frontend\\lib\\api.ts (bottom 100 lines) to see existing api objects and add coachAnalyticsApi",
+    "efficiency_tips": [
+      "Use limit on Read tool — only read the sections you need",
+      "Run npx tsc --noEmit before testing to catch type errors early",
+      "Write complete new files in one Write call rather than piecemeal Edits",
+      "Run parallel tool calls when reading multiple independent files",
+      "Do NOT re-read files already described in this snapshot"
+    ],
+    "do_not": [
+      "Create tailwind.config.ts",
+      "Re-train the ML model",
+      "Change port numbers (5001 backend, 3000 frontend)",
+      "Ask clarifying questions — this context is complete",
+      "Use Model.create() for WeightLog — use findOneAndUpdate with upsert:true"
+    ],
+    "after_phase_3_2_do": "Phase 3.4 (Chatbot side panel), then Phase 3.5 (profile real history)"
+  }
+}

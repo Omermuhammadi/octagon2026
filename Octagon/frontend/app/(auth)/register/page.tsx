@@ -33,8 +33,8 @@ export default function RegisterPage() {
     // Show loading while checking auth state or if authenticated (redirecting)
     if (authLoading || isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-octagon-gold" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
             </div>
         );
     }
@@ -87,24 +87,22 @@ export default function RegisterPage() {
             </div>
 
             {/* Right Side - Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-y-auto">
-                {/* Background glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-octagon-gold/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-y-auto bg-white">
 
                 <div className="w-full max-w-md space-y-8 relative z-10 my-auto">
                     <div className="text-center">
-                        <h1 className="text-3xl font-display italic text-white mb-2">CREATE ACCOUNT</h1>
-                        <p className="text-gray-400">Join the ultimate MMA analytics platform.</p>
+                        <h1 className="text-3xl font-display italic text-gray-900 mb-2">CREATE ACCOUNT</h1>
+                        <p className="text-gray-500">Join the ultimate MMA analytics platform.</p>
                     </div>
 
                     {/* Toggle */}
-                    <div className="flex p-1 bg-white/5 rounded-lg mb-8">
+                    <div className="flex p-1 bg-gray-100 rounded-lg mb-8">
                         <Link href="/login" className="flex-1">
-                            <button className="w-full py-2 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-all">
+                            <button className="w-full py-2 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-all">
                                 Log In
                             </button>
                         </Link>
-                        <button className="flex-1 py-2 text-sm font-bold uppercase tracking-wider bg-white/10 text-white rounded-md shadow-sm transition-all">
+                        <button className="flex-1 py-2 text-sm font-bold uppercase tracking-wider bg-white text-gray-900 rounded-md shadow-sm transition-all">
                             Sign Up
                         </button>
                     </div>
@@ -118,7 +116,7 @@ export default function RegisterPage() {
                                     onChange={(e) => setFirstName(e.target.value)}
                                     placeholder="Conor"
                                     required
-                                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-gold focus:ring-octagon-gold"
+                                    className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400"
                                 />
                             </div>
                             <div>
@@ -128,7 +126,7 @@ export default function RegisterPage() {
                                     onChange={(e) => setLastName(e.target.value)}
                                     placeholder="McGregor"
                                     required
-                                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-gold focus:ring-octagon-gold"
+                                    className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400"
                                 />
                             </div>
                         </div>
@@ -141,7 +139,7 @@ export default function RegisterPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="fighter@octagon.com"
                                 required
-                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-gold focus:ring-octagon-gold"
+                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400"
                             />
                         </div>
 
@@ -153,7 +151,7 @@ export default function RegisterPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
                                 required
-                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-gold focus:ring-octagon-gold"
+                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400"
                             />
                             <PasswordStrength password={password} className="mt-3" />
                         </div>
@@ -167,15 +165,15 @@ export default function RegisterPage() {
                                     className={cn(
                                         "cursor-pointer relative p-4 rounded-lg border transition-all duration-300 flex flex-col items-center gap-2 group",
                                         role === "coach"
-                                            ? "bg-octagon-gold/10 border-octagon-gold"
-                                            : "bg-white/5 border-white/10 hover:border-white/30"
+                                            ? "bg-amber-50 border-amber-400"
+                                            : "bg-gray-50 border-gray-200 hover:border-gray-300"
                                     )}
                                 >
-                                    <Dumbbell className={cn("w-6 h-6", role === "coach" ? "text-octagon-gold" : "text-gray-400 group-hover:text-white")} />
-                                    <span className={cn("text-xs font-bold uppercase tracking-wider", role === "coach" ? "text-white" : "text-gray-400 group-hover:text-white")}>Coach / Fighter</span>
+                                    <Dumbbell className={cn("w-6 h-6", role === "coach" ? "text-amber-500" : "text-gray-400 group-hover:text-gray-600")} />
+                                    <span className={cn("text-xs font-bold uppercase tracking-wider", role === "coach" ? "text-gray-900" : "text-gray-500 group-hover:text-gray-700")}>Coach / Fighter</span>
                                     {role === "coach" && (
                                         <div className="absolute top-2 right-2">
-                                            <Check className="w-3 h-3 text-octagon-gold" />
+                                            <Check className="w-3 h-3 text-amber-500" />
                                         </div>
                                     )}
                                 </div>
@@ -185,15 +183,15 @@ export default function RegisterPage() {
                                     className={cn(
                                         "cursor-pointer relative p-4 rounded-lg border transition-all duration-300 flex flex-col items-center gap-2 group",
                                         role === "fan"
-                                            ? "bg-octagon-red/10 border-octagon-red"
-                                            : "bg-white/5 border-white/10 hover:border-white/30"
+                                            ? "bg-red-50 border-red-400"
+                                            : "bg-gray-50 border-gray-200 hover:border-gray-300"
                                     )}
                                 >
-                                    <Star className={cn("w-6 h-6", role === "fan" ? "text-octagon-red" : "text-gray-400 group-hover:text-white")} />
-                                    <span className={cn("text-xs font-bold uppercase tracking-wider", role === "fan" ? "text-white" : "text-gray-400 group-hover:text-white")}>Fan / Learner</span>
+                                    <Star className={cn("w-6 h-6", role === "fan" ? "text-red-600" : "text-gray-400 group-hover:text-gray-600")} />
+                                    <span className={cn("text-xs font-bold uppercase tracking-wider", role === "fan" ? "text-gray-900" : "text-gray-500 group-hover:text-gray-700")}>Fan / Learner</span>
                                     {role === "fan" && (
                                         <div className="absolute top-2 right-2">
-                                            <Check className="w-3 h-3 text-octagon-red" />
+                                            <Check className="w-3 h-3 text-red-600" />
                                         </div>
                                     )}
                                 </div>
@@ -204,7 +202,7 @@ export default function RegisterPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="p-3 rounded bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-500 text-sm"
+                                className="p-3 rounded bg-red-50 border border-red-200 flex items-center gap-2 text-red-600 text-sm"
                             >
                                 <AlertCircle className="w-4 h-4" />
                                 {error}

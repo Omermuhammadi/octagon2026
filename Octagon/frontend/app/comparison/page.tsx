@@ -123,62 +123,50 @@ export default function ComparisonPage() {
         setShowSuggestions2(false);
     };
 
+    const getWinRate = (f: Fighter) => {
+        const total = (f.wins || 0) + (f.losses || 0) + (f.draws || 0);
+        return total > 0 ? Math.round((f.wins / total) * 100) : 0;
+    };
+
+    const getOffensiveOutput = (f: Fighter) => {
+        const raw = (f.slpm || 0) * 10 + (f.takedownAvg || 0) * 15;
+        return Math.min(Math.round(raw), 100);
+    };
+
+    const getFighterStyle = (f: Fighter): { label: string; color: string; bg: string } => {
+        if ((f.slpm || 0) > 4.0 && (f.takedownAvg || 0) < 1.5) return { label: 'Striker', color: '#DC2626', bg: 'bg-red-50 border-red-200 text-red-700' };
+        if ((f.takedownAvg || 0) > 2.0 || (f.submissionAvg || 0) > 0.6) return { label: 'Grappler', color: '#2563EB', bg: 'bg-blue-50 border-blue-200 text-blue-700' };
+        return { label: 'Well-Rounded', color: '#16A34A', bg: 'bg-green-50 border-green-200 text-green-700' };
+    };
+
     const getRadarData = () => {
         if (!selectedFighter1 || !selectedFighter2) return [];
         return [
-            {
-                subject: 'Str. Accuracy', 
-                A: selectedFighter1.strikingAccuracy || 0, 
-                B: selectedFighter2.strikingAccuracy || 0, 
-                fullMark: 100 
-            },
-            { 
-                subject: 'Str. Defense', 
-                A: selectedFighter1.strikingDefense || 0, 
-                B: selectedFighter2.strikingDefense || 0, 
-                fullMark: 100 
-            },
-            { 
-                subject: 'TD Accuracy', 
-                A: selectedFighter1.takedownAccuracy || 0, 
-                B: selectedFighter2.takedownAccuracy || 0, 
-                fullMark: 100 
-            },
-            { 
-                subject: 'TD Defense', 
-                A: selectedFighter1.takedownDefense || 0, 
-                B: selectedFighter2.takedownDefense || 0, 
-                fullMark: 100 
-            },
-            { 
-                subject: 'Str/Min', 
-                A: Math.min((selectedFighter1.slpm || 0) * 10, 100), 
-                B: Math.min((selectedFighter2.slpm || 0) * 10, 100), 
-                fullMark: 100 
-            },
-            { 
-                subject: 'Sub Avg', 
-                A: Math.min((selectedFighter1.submissionAvg || 0) * 20, 100), 
-                B: Math.min((selectedFighter2.submissionAvg || 0) * 20, 100), 
-                fullMark: 100 
-            },
+            { subject: 'Str. Accuracy', A: selectedFighter1.strikingAccuracy || 0, B: selectedFighter2.strikingAccuracy || 0, fullMark: 100 },
+            { subject: 'Str. Defense', A: selectedFighter1.strikingDefense || 0, B: selectedFighter2.strikingDefense || 0, fullMark: 100 },
+            { subject: 'TD Accuracy', A: selectedFighter1.takedownAccuracy || 0, B: selectedFighter2.takedownAccuracy || 0, fullMark: 100 },
+            { subject: 'TD Defense', A: selectedFighter1.takedownDefense || 0, B: selectedFighter2.takedownDefense || 0, fullMark: 100 },
+            { subject: 'Str/Min', A: Math.min((selectedFighter1.slpm || 0) * 10, 100), B: Math.min((selectedFighter2.slpm || 0) * 10, 100), fullMark: 100 },
+            { subject: 'Sub Avg', A: Math.min((selectedFighter1.submissionAvg || 0) * 20, 100), B: Math.min((selectedFighter2.submissionAvg || 0) * 20, 100), fullMark: 100 },
+            { subject: 'Win Rate', A: getWinRate(selectedFighter1), B: getWinRate(selectedFighter2), fullMark: 100 },
+            { subject: 'Offense', A: getOffensiveOutput(selectedFighter1), B: getOffensiveOutput(selectedFighter2), fullMark: 100 },
         ];
     };
 
     if (authLoading || !isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-octagon-red" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black pt-24 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gray-50 pt-24 px-4 sm:px-6 lg:px-8 pb-16">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl font-display italic text-white mb-4">FIGHTER <span className="text-octagon-red">COMPARISON</span></h1>
-                    <p className="text-gray-400 max-w-2xl mx-auto">Select two fighters to analyze their stats head-to-head.</p>
+                    <h1 className="text-5xl font-display italic text-gray-900 mb-4">FIGHTER <span className="text-red-600">COMPARISON</span></h1>
+                    <p className="text-gray-500 max-w-2xl mx-auto">Select two fighters to analyze their stats head-to-head.</p>
                 </div>
 
                 {/* Fighter Selection */}
@@ -194,7 +182,7 @@ export default function ComparisonPage() {
                                 )}
                                 <input
                                     type="text"
-                                    className="w-full bg-neutral-950 border-2 border-white/30 rounded-xl py-3 pl-12 pr-4 text-white text-base focus:border-octagon-red focus:ring-2 focus:ring-octagon-red/20 focus:outline-none transition-all placeholder:text-gray-500"
+                                    className="w-full bg-white border-2 border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-900 text-base focus:border-red-500 focus:ring-2 focus:ring-red-100 focus:outline-none transition-all placeholder:text-gray-400 shadow-sm"
                                     placeholder="Type fighter name..."
                                     value={fighter1Search}
                                     onChange={(e) => {
@@ -206,10 +194,10 @@ export default function ComparisonPage() {
                                 />
                                 {/* Dropdown Results */}
                                 {showSuggestions1 && fighter1Search.length >= 2 && (
-                                    <div className="absolute z-[100] w-full mt-3 bg-black border-4 border-octagon-red rounded-2xl shadow-[0_0_40px_rgba(220,38,38,0.4)] overflow-hidden" style={{ minHeight: '300px' }}>
+                                    <div className="absolute z-[100] w-full mt-3 bg-white border-2 border-red-200 rounded-2xl shadow-xl overflow-hidden" style={{ minHeight: '300px' }}>
                                         {/* Header */}
-                                        <div className="sticky top-0 bg-octagon-red px-5 py-3 z-10">
-                                            <span className="text-sm text-white font-bold uppercase tracking-wider">
+                                        <div className="sticky top-0 bg-red-600 px-5 py-3 z-10">
+                                            <span className="text-sm text-gray-700 font-bold uppercase tracking-wider">
                                                 {searching1 ? '🔍 Searching...' : `✅ ${fighter1Suggestions.length} fighters found - Click to select`}
                                             </span>
                                         </div>
@@ -218,22 +206,22 @@ export default function ComparisonPage() {
                                                 fighter1Suggestions.map((fighter, index) => (
                                                     <button
                                                         key={fighter._id}
-                                                        className={`w-full px-5 py-5 text-left text-white hover:bg-octagon-red/40 active:bg-octagon-red/60 transition-all flex items-center gap-5 group cursor-pointer ${index !== fighter1Suggestions.length - 1 ? 'border-b-2 border-white/10' : ''}`}
+                                                        className={`w-full px-5 py-5 text-left text-gray-900 hover:bg-red-50 active:bg-red-100 transition-all flex items-center gap-5 group cursor-pointer ${index !== fighter1Suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
                                                         onClick={() => selectFighter1(fighter)}
                                                     >
-                                                        <div className="w-16 h-16 bg-gradient-to-br from-octagon-red to-octagon-gold rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
-                                                            <span className="text-white font-bold text-2xl">{fighter.name.charAt(0)}</span>
+                                                        <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-amber-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-md">
+                                                            <span className="text-gray-900 font-bold text-2xl">{fighter.name.charAt(0)}</span>
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="font-bold text-xl text-white group-hover:text-octagon-gold transition-colors">{fighter.name}</div>
-                                                            <div className="text-base text-gray-300 flex items-center gap-3 mt-2">
-                                                                <span className="bg-green-500/30 text-green-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.wins} Wins</span>
-                                                                <span className="bg-red-500/30 text-red-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.losses} Losses</span>
-                                                                <span className="bg-gray-500/30 text-gray-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.draws} Draws</span>
+                                                            <div className="font-bold text-xl text-gray-900 group-hover:text-red-600 transition-colors">{fighter.name}</div>
+                                                            <div className="text-base text-gray-600 flex items-center gap-3 mt-2">
+                                                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-sm">{fighter.wins} Wins</span>
+                                                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold text-sm">{fighter.losses} Losses</span>
+                                                                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-bold text-sm">{fighter.draws} Draws</span>
                                                             </div>
-                                                            {fighter.weight && <div className="text-sm text-gray-400 mt-1">Weight: {fighter.weight}</div>}
+                                                            {fighter.weight && <div className="text-sm text-gray-500 mt-1">Weight: {fighter.weight}</div>}
                                                         </div>
-                                                        <div className="text-octagon-gold text-sm font-bold uppercase group-hover:translate-x-1 transition-transform">
+                                                        <div className="text-red-600 text-sm font-bold uppercase group-hover:translate-x-1 transition-transform">
                                                             SELECT →
                                                         </div>
                                                     </button>
@@ -252,12 +240,12 @@ export default function ComparisonPage() {
                             {selectedFighter1 && (
                                 <div className="mt-4 flex items-center gap-4">
                                     <div className="w-16 h-16 bg-gray-800 rounded-full overflow-hidden border border-white/10 flex items-center justify-center">
-                                        <span className="text-2xl font-display text-white">
+                                        <span className="text-2xl font-display text-gray-900">
                                             {selectedFighter1.name.charAt(0)}
                                         </span>
                                     </div>
                                     <div>
-                                        <div className="text-xl font-display text-white uppercase">{selectedFighter1.name}</div>
+                                        <div className="text-xl font-display text-gray-900 uppercase">{selectedFighter1.name}</div>
                                         <div className="text-xs text-gray-400 font-bold uppercase">
                                             {selectedFighter1.nickname || `${selectedFighter1.wins}-${selectedFighter1.losses}-${selectedFighter1.draws}`}
                                         </div>
@@ -268,7 +256,7 @@ export default function ComparisonPage() {
                     </div>
 
                     <div className="md:col-span-1 flex justify-center items-center h-full pt-12">
-                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
                             <ArrowRightLeft className="w-4 h-4 text-gray-400" />
                         </div>
                     </div>
@@ -284,7 +272,7 @@ export default function ComparisonPage() {
                                 )}
                                 <input
                                     type="text"
-                                    className="w-full bg-neutral-950 border-2 border-white/30 rounded-xl py-3 pl-12 pr-4 text-white text-base focus:border-octagon-gold focus:ring-2 focus:ring-octagon-gold/20 focus:outline-none transition-all placeholder:text-gray-500"
+                                    className="w-full bg-white border-2 border-gray-200 rounded-xl py-3 pl-12 pr-4 text-gray-900 text-base focus:border-amber-400 focus:ring-2 focus:ring-amber-100 focus:outline-none transition-all placeholder:text-gray-400 shadow-sm"
                                     placeholder="Type fighter name..."
                                     value={fighter2Search}
                                     onChange={(e) => {
@@ -296,10 +284,10 @@ export default function ComparisonPage() {
                                 />
                                 {/* Dropdown Results */}
                                 {showSuggestions2 && fighter2Search.length >= 2 && (
-                                    <div className="absolute z-[100] w-full mt-3 bg-black border-4 border-octagon-gold rounded-2xl shadow-[0_0_40px_rgba(234,179,8,0.4)] overflow-hidden" style={{ minHeight: '300px' }}>
+                                    <div className="absolute z-[100] w-full mt-3 bg-white border-2 border-amber-200 rounded-2xl shadow-xl overflow-hidden" style={{ minHeight: '300px' }}>
                                         {/* Header */}
-                                        <div className="sticky top-0 bg-octagon-gold px-5 py-3 z-10">
-                                            <span className="text-sm text-black font-bold uppercase tracking-wider">
+                                        <div className="sticky top-0 bg-amber-500 px-5 py-3 z-10">
+                                            <span className="text-sm text-gray-700 font-bold uppercase tracking-wider">
                                                 {searching2 ? '🔍 Searching...' : `✅ ${fighter2Suggestions.length} fighters found - Click to select`}
                                             </span>
                                         </div>
@@ -308,22 +296,22 @@ export default function ComparisonPage() {
                                                 fighter2Suggestions.map((fighter, index) => (
                                                     <button
                                                         key={fighter._id}
-                                                        className={`w-full px-5 py-5 text-left text-white hover:bg-octagon-gold/40 active:bg-octagon-gold/60 transition-all flex items-center gap-5 group cursor-pointer ${index !== fighter2Suggestions.length - 1 ? 'border-b-2 border-white/10' : ''}`}
+                                                        className={`w-full px-5 py-5 text-left text-gray-900 hover:bg-amber-50 active:bg-amber-100 transition-all flex items-center gap-5 group cursor-pointer ${index !== fighter2Suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
                                                         onClick={() => selectFighter2(fighter)}
                                                     >
-                                                        <div className="w-16 h-16 bg-gradient-to-br from-octagon-gold to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
-                                                            <span className="text-white font-bold text-2xl">{fighter.name.charAt(0)}</span>
+                                                        <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-md">
+                                                            <span className="text-gray-900 font-bold text-2xl">{fighter.name.charAt(0)}</span>
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="font-bold text-xl text-white group-hover:text-octagon-gold transition-colors">{fighter.name}</div>
-                                                            <div className="text-base text-gray-300 flex items-center gap-3 mt-2">
-                                                                <span className="bg-green-500/30 text-green-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.wins} Wins</span>
-                                                                <span className="bg-red-500/30 text-red-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.losses} Losses</span>
-                                                                <span className="bg-gray-500/30 text-gray-300 px-3 py-1 rounded-full font-bold text-sm">{fighter.draws} Draws</span>
+                                                            <div className="font-bold text-xl text-gray-900 group-hover:text-amber-600 transition-colors">{fighter.name}</div>
+                                                            <div className="text-base text-gray-600 flex items-center gap-3 mt-2">
+                                                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-sm">{fighter.wins} Wins</span>
+                                                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold text-sm">{fighter.losses} Losses</span>
+                                                                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-bold text-sm">{fighter.draws} Draws</span>
                                                             </div>
-                                                            {fighter.weight && <div className="text-sm text-gray-400 mt-1">Weight: {fighter.weight}</div>}
+                                                            {fighter.weight && <div className="text-sm text-gray-500 mt-1">Weight: {fighter.weight}</div>}
                                                         </div>
-                                                        <div className="text-octagon-gold text-sm font-bold uppercase group-hover:translate-x-1 transition-transform">
+                                                        <div className="text-amber-600 text-sm font-bold uppercase group-hover:translate-x-1 transition-transform">
                                                             SELECT →
                                                         </div>
                                                     </button>
@@ -342,12 +330,12 @@ export default function ComparisonPage() {
                             {selectedFighter2 && (
                                 <div className="mt-4 flex items-center gap-4">
                                     <div className="w-16 h-16 bg-gray-800 rounded-full overflow-hidden border border-white/10 flex items-center justify-center">
-                                        <span className="text-2xl font-display text-white">
+                                        <span className="text-2xl font-display text-gray-900">
                                             {selectedFighter2.name.charAt(0)}
                                         </span>
                                     </div>
                                     <div>
-                                        <div className="text-xl font-display text-white uppercase">{selectedFighter2.name}</div>
+                                        <div className="text-xl font-display text-gray-900 uppercase">{selectedFighter2.name}</div>
                                         <div className="text-xs text-gray-400 font-bold uppercase">
                                             {selectedFighter2.nickname || `${selectedFighter2.wins}-${selectedFighter2.losses}-${selectedFighter2.draws}`}
                                         </div>
@@ -367,44 +355,44 @@ export default function ComparisonPage() {
                             </div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-3 gap-8 items-center border-b border-white/10 pb-8 mb-8">
+                                <div className="grid grid-cols-3 gap-8 items-center border-b border-gray-200 pb-8 mb-8">
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">{selectedFighter1.height || '--'}</div>
+                                        <div className="text-5xl font-display text-gray-900">{selectedFighter1.height || '--'}</div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Height</div>
                                     </div>
                                     <div className="text-center text-gray-700 font-display text-2xl">VS</div>
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">{selectedFighter2.height || '--'}</div>
+                                        <div className="text-5xl font-display text-gray-900">{selectedFighter2.height || '--'}</div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Height</div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-8 items-center border-b border-white/10 pb-8 mb-8">
+                                <div className="grid grid-cols-3 gap-8 items-center border-b border-gray-200 pb-8 mb-8">
                                     <div className="text-center">
-                                        <div className={`text-5xl font-display ${(selectedFighter1.reach || 0) > (selectedFighter2.reach || 0) ? 'text-octagon-red' : 'text-white'}`}>
+                                        <div className={`text-5xl font-display ${(selectedFighter1.reach || 0) > (selectedFighter2.reach || 0) ? 'text-octagon-red' : 'text-gray-900'}`}>
                                             {selectedFighter1.reach ? `${selectedFighter1.reach}"` : '--'}
                                         </div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Reach</div>
                                     </div>
                                     <div className="text-center text-gray-700 font-display text-2xl">VS</div>
                                     <div className="text-center">
-                                        <div className={`text-5xl font-display ${(selectedFighter2.reach || 0) > (selectedFighter1.reach || 0) ? 'text-octagon-red' : 'text-white'}`}>
+                                        <div className={`text-5xl font-display ${(selectedFighter2.reach || 0) > (selectedFighter1.reach || 0) ? 'text-octagon-red' : 'text-gray-900'}`}>
                                             {selectedFighter2.reach ? `${selectedFighter2.reach}"` : '--'}
                                         </div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Reach</div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-8 items-center border-b border-white/10 pb-8 mb-8">
+                                <div className="grid grid-cols-3 gap-8 items-center border-b border-gray-200 pb-8 mb-8">
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">
+                                        <div className="text-5xl font-display text-gray-900">
                                             {selectedFighter1.wins}-{selectedFighter1.losses}-{selectedFighter1.draws}
                                         </div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Record</div>
                                     </div>
                                     <div className="text-center text-gray-700 font-display text-2xl">VS</div>
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">
+                                        <div className="text-5xl font-display text-gray-900">
                                             {selectedFighter2.wins}-{selectedFighter2.losses}-{selectedFighter2.draws}
                                         </div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Record</div>
@@ -413,22 +401,30 @@ export default function ComparisonPage() {
 
                                 <div className="grid grid-cols-3 gap-8 items-center">
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">{selectedFighter1.slpm.toFixed(1)}</div>
+                                        <div className="text-5xl font-display text-gray-900">{selectedFighter1.slpm.toFixed(1)}</div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Strikes/Min</div>
                                     </div>
                                     <div className="text-center text-gray-700 font-display text-2xl">VS</div>
                                     <div className="text-center">
-                                        <div className="text-5xl font-display text-white">{selectedFighter2.slpm.toFixed(1)}</div>
+                                        <div className="text-5xl font-display text-gray-900">{selectedFighter2.slpm.toFixed(1)}</div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Strikes/Min</div>
                                     </div>
                                 </div>
 
-                                <div className="mt-12 p-4 bg-black/40 rounded border border-white/5 flex flex-col items-center justify-center min-h-[400px]">
+                                <div className="mt-12 p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col items-center justify-center min-h-[400px]">
                                     <div className="w-full flex justify-between items-center mb-4 px-4">
-                                        <div className="text-white font-display text-xl uppercase">Advanced Analytics</div>
+                                        <div className="text-gray-900 font-display text-xl uppercase">Advanced Analytics (8 Metrics)</div>
                                         <div className="flex gap-4 text-xs font-bold uppercase">
-                                            <div className="flex items-center gap-2"><div className="w-3 h-3 bg-octagon-gold rounded-full"></div>{selectedFighter1.name.split(' ').pop()}</div>
-                                            <div className="flex items-center gap-2"><div className="w-3 h-3 bg-octagon-red rounded-full"></div>{selectedFighter2.name.split(' ').pop()}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-red-600 rounded-full" />
+                                                <span>{selectedFighter1.name.split(' ').pop()}</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getFighterStyle(selectedFighter1).bg}`}>{getFighterStyle(selectedFighter1).label}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-blue-600 rounded-full" />
+                                                <span>{selectedFighter2.name.split(' ').pop()}</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getFighterStyle(selectedFighter2).bg}`}>{getFighterStyle(selectedFighter2).label}</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <FighterRadarChart
@@ -436,6 +432,36 @@ export default function ComparisonPage() {
                                         fighterAName={selectedFighter1.name.split(' ').pop() || 'A'}
                                         fighterBName={selectedFighter2.name.split(' ').pop() || 'B'}
                                     />
+                                </div>
+
+                                {/* Head-to-Head Stat Table */}
+                                <div className="mt-8 overflow-hidden rounded-xl border border-gray-200">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b border-gray-200">
+                                                <th className="text-left px-4 py-3 text-xs font-bold text-red-600 uppercase tracking-wider">{selectedFighter1.name.split(' ').pop()}</th>
+                                                <th className="text-center px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Metric</th>
+                                                <th className="text-right px-4 py-3 text-xs font-bold text-blue-600 uppercase tracking-wider">{selectedFighter2.name.split(' ').pop()}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[
+                                                { label: 'Str. Accuracy', a: `${selectedFighter1.strikingAccuracy}%`, b: `${selectedFighter2.strikingAccuracy}%`, aVal: selectedFighter1.strikingAccuracy, bVal: selectedFighter2.strikingAccuracy },
+                                                { label: 'Str. Defense', a: `${selectedFighter1.strikingDefense}%`, b: `${selectedFighter2.strikingDefense}%`, aVal: selectedFighter1.strikingDefense, bVal: selectedFighter2.strikingDefense },
+                                                { label: 'Strikes/Min', a: selectedFighter1.slpm?.toFixed(1), b: selectedFighter2.slpm?.toFixed(1), aVal: selectedFighter1.slpm, bVal: selectedFighter2.slpm },
+                                                { label: 'TD Accuracy', a: `${selectedFighter1.takedownAccuracy}%`, b: `${selectedFighter2.takedownAccuracy}%`, aVal: selectedFighter1.takedownAccuracy, bVal: selectedFighter2.takedownAccuracy },
+                                                { label: 'TD Defense', a: `${selectedFighter1.takedownDefense}%`, b: `${selectedFighter2.takedownDefense}%`, aVal: selectedFighter1.takedownDefense, bVal: selectedFighter2.takedownDefense },
+                                                { label: 'Sub Avg', a: selectedFighter1.submissionAvg?.toFixed(2), b: selectedFighter2.submissionAvg?.toFixed(2), aVal: selectedFighter1.submissionAvg, bVal: selectedFighter2.submissionAvg },
+                                                { label: 'Win Rate', a: `${getWinRate(selectedFighter1)}%`, b: `${getWinRate(selectedFighter2)}%`, aVal: getWinRate(selectedFighter1), bVal: getWinRate(selectedFighter2) },
+                                            ].map((row, i) => (
+                                                <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                                                    <td className={`px-4 py-3 font-bold ${(row.aVal || 0) > (row.bVal || 0) ? 'text-red-600' : 'text-gray-700'}`}>{row.a}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-500 text-xs font-medium">{row.label}</td>
+                                                    <td className={`px-4 py-3 font-bold text-right ${(row.bVal || 0) > (row.aVal || 0) ? 'text-blue-600' : 'text-gray-700'}`}>{row.b}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </>
                         )}
@@ -457,7 +483,7 @@ export default function ComparisonPage() {
                 {selectedFighter1 && selectedFighter2 && !loading && (
                     <Card variant="glass" className="p-8 mt-8">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-display uppercase text-white flex items-center">
+                            <h2 className="text-2xl font-display uppercase text-gray-900 flex items-center">
                                 <Brain className="w-6 h-6 mr-3 text-octagon-gold" />
                                 Training Suggestions
                             </h2>
@@ -541,8 +567,8 @@ export default function ComparisonPage() {
 
                 {/* Strategy Suggestions Section */}
                 {selectedFighter1 && selectedFighter2 && !loading && (
-                    <div className="mt-8 bg-neutral-900/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 md:p-8">
-                        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                    <div className="mt-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                             <Lightbulb className="w-6 h-6 text-yellow-500" />
                             Strategy Suggestions
                         </h2>
@@ -562,9 +588,9 @@ export default function ComparisonPage() {
                                             {suggestion.advantage === 'fighter1' ? selectedFighter1.name :
                                              suggestion.advantage === 'fighter2' ? selectedFighter2.name : 'Even'}
                                         </span>
-                                        <h3 className="text-white font-semibold">{suggestion.title}</h3>
+                                        <h3 className="text-gray-900 font-semibold">{suggestion.title}</h3>
                                     </div>
-                                    <p className="text-neutral-400 text-sm">{suggestion.description}</p>
+                                    <p className="text-gray-500 text-sm">{suggestion.description}</p>
                                 </div>
                             ))}
                         </div>
@@ -684,18 +710,18 @@ function generateStrategySuggestions(
 
 function SuggestionItem({ title, description, priority }: { title: string; description: string; priority: "high" | "medium" | "low" }) {
     const priorityColors = {
-        high: "border-octagon-red/50 bg-octagon-red/10",
-        medium: "border-octagon-gold/50 bg-octagon-gold/10",
-        low: "border-white/20 bg-white/5"
+        high: "border-red-200 bg-red-50",
+        medium: "border-amber-200 bg-amber-50",
+        low: "border-gray-200 bg-gray-50"
     };
 
     return (
-        <div className={`p-4 rounded border ${priorityColors[priority]} transition-colors hover:bg-white/10`}>
-            <h4 className="text-white font-bold text-sm mb-1">{title}</h4>
-            <p className="text-gray-400 text-xs">{description}</p>
+        <div className={`p-4 rounded-xl border ${priorityColors[priority]} transition-colors hover:shadow-sm`}>
+            <h4 className="text-gray-900 font-bold text-sm mb-1">{title}</h4>
+            <p className="text-gray-500 text-xs">{description}</p>
             <div className="mt-2">
-                <span className={`text-xs uppercase font-bold ${priority === "high" ? "text-octagon-red" :
-                    priority === "medium" ? "text-octagon-gold" :
+                <span className={`text-xs uppercase font-bold ${priority === "high" ? "text-red-600" :
+                    priority === "medium" ? "text-amber-600" :
                         "text-gray-500"
                     }`}>
                     {priority} priority

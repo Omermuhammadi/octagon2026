@@ -1,29 +1,25 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo, useRef } from "react";
-import { Target, TrendingUp, Calendar, Star, Zap, Camera, Trophy, Clock, ChevronRight, Flame, Award } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import {
+    Target, TrendingUp, Calendar, Star, Zap, Camera,
+    Trophy, Clock, ChevronRight, Flame, Award, Shield,
+    BookOpen, MapPin, BarChart2, Sword
+} from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { eventApi, statsApi, Event, UserStats } from "@/lib/api";
 import { getAuthToken } from "@/contexts/AuthContext";
-import gsap from "gsap";
 
-// Animation variants for staggered children
 const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: { staggerChildren: 0.1 }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
-
 const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
 export default function FanDashboard() {
@@ -33,335 +29,244 @@ export default function FanDashboard() {
     const [loadingEvents, setLoadingEvents] = useState(true);
     const [userStats, setUserStats] = useState<UserStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const titleRef = useRef<HTMLHeadingElement>(null);
-    const [titleAnimated, setTitleAnimated] = useState(false);
 
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
-            router.push("/login");
-        } else if (!isLoading && user?.role !== "fan") {
-            router.push("/dashboard/coach");
-        }
+        if (!isLoading && !isAuthenticated) router.push("/login");
+        else if (!isLoading && user?.role === "coach") router.push("/dashboard/coach");
     }, [isAuthenticated, isLoading, user, router]);
 
-    // GSAP Split Text Animation for Dashboard Title
     useEffect(() => {
-        if (!isLoading && user && titleRef.current && !titleAnimated) {
-            setTitleAnimated(true);
-            const title = titleRef.current;
-            const text = title.innerText;
-            const chars = text.split('');
-            title.innerHTML = chars.map(char => 
-                char === ' ' ? ' ' : `<span class="inline-block opacity-0">${char}</span>`
-            ).join('');
-            
-            gsap.fromTo(
-                title.querySelectorAll('span'),
-                { opacity: 0, y: 40, rotateX: -90 },
-                { 
-                    opacity: 1, 
-                    y: 0, 
-                    rotateX: 0,
-                    duration: 0.6,
-                    stagger: 0.04,
-                    ease: "back.out(1.7)"
-                }
-            );
-        }
-    }, [isLoading, user, titleAnimated]);
-
-    // Fetch upcoming events
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const response = await eventApi.getUpcomingEvents(5);
-                if (response.success && response.data) {
-                    setUpcomingEvents(response.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch events:", error);
-            } finally {
-                setLoadingEvents(false);
-            }
-        };
-        fetchEvents();
+        eventApi.getUpcomingEvents(5).then(r => {
+            if (r.success && r.data) setUpcomingEvents(r.data);
+        }).catch(() => {}).finally(() => setLoadingEvents(false));
     }, []);
 
-    // Fetch real user stats from backend
     useEffect(() => {
-        const fetchStats = async () => {
-            const token = getAuthToken();
-            if (!token) { setLoadingStats(false); return; }
-            try {
-                const response = await statsApi.getUserStats(token);
-                if (response.success && response.data) {
-                    setUserStats(response.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch stats:", error);
-            } finally {
-                setLoadingStats(false);
-            }
-        };
-        fetchStats();
+        const token = getAuthToken();
+        if (!token) { setLoadingStats(false); return; }
+        statsApi.getUserStats(token).then(r => {
+            if (r.success && r.data) setUserStats(r.data);
+        }).catch(() => {}).finally(() => setLoadingStats(false));
     }, []);
 
-    // Memoized stats for performance - uses real API data
     const stats = useMemo(() => {
         if (!user) return [];
         const s = userStats;
         return [
-            {
-                label: "Predictions Made",
-                value: s?.predictionsMade?.toString() || "0",
-                icon: Target
-            },
-            {
-                label: "Accuracy Rate",
-                value: `${s?.accuracyRate || 0}%`,
-                icon: TrendingUp
-            },
-            {
-                label: "Training Sessions",
-                value: s?.trainingSessions?.toString() || "0",
-                icon: Trophy
-            },
-            {
-                label: "Days Active",
-                value: s?.daysActive?.toString() || "1",
-                icon: Calendar
-            }
+            { label: "Predictions Made", value: s?.predictionsMade ?? 0, icon: Target, color: "text-red-600", bg: "bg-red-50", border: "border-red-100" },
+            { label: "Accuracy Rate", value: `${s?.accuracyRate ?? 0}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+            { label: "Training Sessions", value: s?.trainingSessions ?? 0, icon: Trophy, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+            { label: "Days Active", value: s?.daysActive ?? 1, icon: Calendar, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
         ];
     }, [user, userStats]);
 
-    // Format date for display
-    const formatEventDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
+    const quickActions = [
+        { href: "/prediction", icon: Zap, title: "Fight Predictions", desc: "AI-powered fight outcome analysis", color: "bg-red-600", light: "bg-red-50 text-red-700" },
+        { href: "/comparison", icon: BarChart2, title: "Fighter Comparison", desc: "Side-by-side radar chart analysis", color: "bg-blue-600", light: "bg-blue-50 text-blue-700" },
+        { href: "/training", icon: BookOpen, title: "Training Roadmap", desc: "Structured BJJ, Wrestling & MMA plans", color: "bg-emerald-600", light: "bg-emerald-50 text-emerald-700" },
+        { href: "/form-check", icon: Camera, title: "Form Correction", desc: "AI pose analysis on your technique", color: "bg-purple-600", light: "bg-purple-50 text-purple-700" },
+        { href: "/gyms", icon: MapPin, title: "Find Gyms", desc: "Martial arts gyms near you", color: "bg-amber-600", light: "bg-amber-50 text-amber-700" },
+        { href: "/self-defense", icon: Shield, title: "Self-Defense", desc: "Real-world safety & defense guide", color: "bg-slate-600", light: "bg-slate-50 text-slate-700" },
+    ];
 
-    // Get greeting based on time of day
+    const formatEventDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
     const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return "Good morning";
-        if (hour < 18) return "Good afternoon";
+        const h = new Date().getHours();
+        if (h < 12) return "Good morning";
+        if (h < 18) return "Good afternoon";
         return "Good evening";
     };
 
     if (isLoading || !user) {
         return (
-            <div className="min-h-screen bg-black pt-24 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="relative">
-                        <div className="w-16 h-16 border-4 border-octagon-red/20 rounded-full" />
-                        <div className="w-16 h-16 border-4 border-octagon-red border-t-transparent rounded-full animate-spin absolute inset-0" />
-                    </div>
-                    <p className="text-gray-400 text-sm">Loading your dashboard...</p>
+            <div className="min-h-screen bg-gray-50 pt-24 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-gray-500 text-sm">Loading your dashboard…</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black pt-24 px-4 sm:px-6 lg:px-8 pb-12">
-            {/* Subtle background gradient */}
-            <div className="fixed inset-0 bg-gradient-to-br from-octagon-red/5 via-transparent to-transparent pointer-events-none" />
-            
-            <motion.div 
-                className="max-w-7xl mx-auto relative"
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-            >
-                {/* Header */}
-                <motion.div className="mb-12" variants={itemVariants}>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="min-h-screen bg-gray-50">
+            {/* Dark hero banner */}
+            <div className="bg-gradient-to-r from-gray-900 via-gray-900 to-red-900 text-white pt-24 pb-10 px-4 mb-8">
+                <motion.div className="max-w-7xl mx-auto" initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                         <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <h1 ref={titleRef} className="text-4xl sm:text-5xl font-display italic text-white" style={{ perspective: '1000px' }}>
-                                    FAN DASHBOARD
-                                </h1>
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="px-3 py-1 rounded-full bg-red-600/20 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-widest">
+                                    <Star className="w-3 h-3 inline mr-1" />
+                                    Fan / Learner
+                                </span>
                             </div>
-                            <p className="text-gray-400 flex items-center gap-2">
-                                <Flame className="w-4 h-4 text-octagon-red" />
-                                {getGreeting()}, <span className="text-white font-semibold">{user.name}</span>
+                            <p className="text-gray-400 text-sm mb-1 flex items-center gap-1.5">
+                                <Flame className="w-3.5 h-3.5 text-red-500" />
+                                {getGreeting()}, <span className="text-white font-semibold ml-1">{user.name}</span>
                             </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <motion.div 
-                                className="bg-octagon-red/20 text-octagon-red px-4 py-2 rounded-lg text-xs font-bold uppercase border border-octagon-red/30 flex items-center gap-2"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ type: "spring", stiffness: 400 }}
-                            >
-                                <Star className="w-4 h-4" />
-                                Fan/Learner
-                            </motion.div>
+                            <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight">
+                                YOUR <span className="text-red-400">DASHBOARD</span>
+                            </h1>
                         </div>
                     </div>
                 </motion.div>
+            </div>
 
-                {/* Stats Grid */}
-                <motion.div 
-                    className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12"
-                    variants={containerVariants}
-                >
-                    {stats.map((stat, idx) => (
-                        <motion.div key={idx} variants={itemVariants}>
-                            <Card variant="glass" className="p-5 sm:p-6 hover:border-white/20 transition-all cursor-default">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="p-2 rounded-lg bg-white/5">
-                                        <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-octagon-red" />
+            <motion.div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16" initial="hidden" animate="visible" variants={containerVariants}>
+
+                {/* ── Stats Grid ── */}
+                <motion.div variants={containerVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                    {stats.map((s, i) => (
+                        <motion.div key={i} variants={itemVariants}>
+                            <div className={`bg-white rounded-2xl border ${s.border} p-5 shadow-sm hover:shadow-md transition-shadow`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center`}>
+                                        <s.icon className={`w-5 h-5 ${s.color}`} />
                                     </div>
-                                    <div className="text-2xl sm:text-3xl font-display font-bold text-octagon-red">{stat.value}</div>
+                                    <span className={`text-3xl font-black ${s.color}`}>{s.value}</span>
                                 </div>
-                                <div className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider font-medium">{stat.label}</div>
-                            </Card>
+                                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{s.label}</p>
+                            </div>
                         </motion.div>
                     ))}
                 </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Quick Actions */}
-                    <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card variant="glass" className="p-6 sm:p-8 h-full">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl sm:text-2xl font-display uppercase text-white flex items-center gap-2">
-                                    <Flame className="w-5 h-5 text-octagon-red" />
-                                    Quick Actions
-                                </h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {[
-                                    { href: "/prediction", icon: Zap, title: "Fight Predictions", desc: "Predict upcoming fight outcomes" },
-                                    { href: "/form-check", icon: Camera, title: "Form Correction", desc: "Improve your technique with AI" },
-                                    { href: "/comparison", icon: Target, title: "Fighter Comparison", desc: "Compare fighter statistics" },
-                                    { href: "/training", icon: Star, title: "Training", desc: "Learn MMA fundamentals" },
-                                ].map((action, idx) => (
-                                    <Link key={idx} href={action.href}>
-                                        <motion.div 
-                                            className="p-5 sm:p-6 bg-white/5 rounded-xl border border-white/10 hover:border-octagon-red/50 hover:bg-white/10 transition-all cursor-pointer group"
-                                            whileHover={{ y: -4 }}
-                                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    {/* ── Quick Actions ── */}
+                    <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-5 flex items-center gap-2">
+                                <Flame className="w-5 h-5 text-red-600" /> Quick Actions
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {quickActions.map((a, i) => (
+                                    <Link key={i} href={a.href}>
+                                        <motion.div
+                                            whileHover={{ y: -2, scale: 1.01 }}
+                                            className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm rounded-xl transition-all cursor-pointer group"
                                         >
-                                            <action.icon className="w-8 h-8 text-octagon-red mb-3 group-hover:scale-110 transition-transform" />
-                                            <h3 className="text-base sm:text-lg font-display text-white mb-1 flex items-center gap-2">
-                                                {action.title}
-                                                <ChevronRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                            </h3>
-                                            <p className="text-xs sm:text-sm text-gray-400">{action.desc}</p>
+                                            <div className={`w-10 h-10 ${a.color} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                                                <a.icon className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{a.title}</p>
+                                                <p className="text-xs text-gray-500 mt-0.5 truncate">{a.desc}</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                                         </motion.div>
                                     </Link>
                                 ))}
                             </div>
+                        </div>
 
-                            {/* Upcoming Events from API */}
-                            <div className="mt-8">
-                                <h3 className="text-lg font-display uppercase text-white mb-4 flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-octagon-red" />
-                                    Upcoming Events
-                                </h3>
-                                {loadingEvents ? (
-                                    <div className="flex items-center justify-center py-8">
-                                        <div className="w-6 h-6 border-2 border-octagon-red/20 border-t-octagon-red rounded-full animate-spin" />
-                                    </div>
-                                ) : upcomingEvents.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {upcomingEvents.map((event, idx) => (
-                                            <motion.div 
-                                                key={event._id} 
-                                                className="p-4 bg-white/5 rounded-lg border border-white/10 hover:border-octagon-red/30 transition-colors"
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: idx * 0.1 }}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <span className="text-white font-semibold">{event.name}</span>
-                                                        <p className="text-xs text-gray-500 mt-1">{event.location}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-sm text-octagon-red font-bold">{formatEventDate(event.date)}</div>
-                                                        <div className="text-xs text-gray-500 uppercase">{event.status}</div>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="p-4 bg-white/5 rounded-lg border border-white/10 text-center text-gray-500">
-                                        No upcoming events found
-                                    </div>
-                                )}
+                        {/* Upcoming Events */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-red-600" /> Upcoming Events
+                                </h2>
+                                <Link href="/events" className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5">
+                                    View all <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
                             </div>
-                        </Card>
+                            {loadingEvents ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : upcomingEvents.length > 0 ? (
+                                <div className="space-y-2">
+                                    {upcomingEvents.map((e, i) => (
+                                        <motion.div key={e._id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }}
+                                            className="flex items-center justify-between p-3.5 bg-gray-50 hover:bg-red-50 border border-gray-100 hover:border-red-100 rounded-xl transition-all"
+                                        >
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900">{e.name}</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">{e.location}</p>
+                                            </div>
+                                            <div className="text-right flex-shrink-0 ml-3">
+                                                <p className="text-sm font-bold text-red-600">{formatEventDate(e.date)}</p>
+                                                <p className="text-xs text-gray-400 uppercase">{e.status}</p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center text-gray-400 text-sm">No upcoming events found</div>
+                            )}
+                        </div>
                     </motion.div>
 
-                    {/* User Stats & Activity */}
-                    <motion.div variants={itemVariants}>
-                        <Card variant="glass" className="p-6 sm:p-8">
-                            <h2 className="text-xl sm:text-2xl font-display uppercase text-white mb-6 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-octagon-red" />
-                                Your Progress
+                    {/* ── Profile & Progress ── */}
+                    <motion.div variants={itemVariants} className="space-y-5">
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-5 flex items-center gap-2">
+                                <Award className="w-5 h-5 text-red-600" /> Your Profile
                             </h2>
-                            
-                            {/* User Info */}
-                            <motion.div 
-                                className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10"
-                                whileHover={{ scale: 1.02 }}
-                                transition={{ type: "spring", stiffness: 400 }}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="relative">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-octagon-red to-octagon-gold octagon-avatar flex items-center justify-center shadow-lg shadow-octagon-red/20">
-                                            <span className="text-2xl font-bold text-white">{user.name.charAt(0).toUpperCase()}</span>
-                                        </div>
-                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-black" title="Online" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="text-white font-bold text-lg truncate">{user.name}</h3>
-                                        <p className="text-gray-400 text-sm truncate">{user.email}</p>
-                                        <p className="text-octagon-red text-xs uppercase mt-1 flex items-center gap-1">
-                                            <Star className="w-3 h-3" />
-                                            Member since {user.joinDate}
-                                        </p>
-                                    </div>
-                                </div>
-                            </motion.div>
 
-                            {/* Profile Details */}
-                            <div className="space-y-2 mb-6">
+                            {/* Avatar */}
+                            <div className="flex items-center gap-4 mb-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="relative flex-shrink-0">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 octagon-avatar flex items-center justify-center shadow-sm">
+                                        <span className="text-xl font-black text-white">{user.name.charAt(0).toUpperCase()}</span>
+                                    </div>
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-base font-bold text-gray-900 truncate">{user.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                    <p className="text-xs text-red-600 font-semibold mt-0.5">Member since {user.joinDate}</p>
+                                </div>
+                            </div>
+
+                            {/* Details */}
+                            <div className="space-y-1.5 mb-5">
                                 {[
-                                    { label: "Experience Level", value: user.experienceLevel || 'Not set' },
-                                    { label: "Training Goal", value: user.trainingGoal || 'Not set' },
-                                    { label: "Discipline", value: user.discipline || 'Not set' },
-                                ].map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors">
-                                        <span className="text-gray-400 text-sm">{item.label}</span>
-                                        <span className="text-white font-semibold text-sm">{item.value}</span>
+                                    { label: "Experience Level", value: user.experienceLevel || "Not set" },
+                                    { label: "Training Goal", value: user.trainingGoal || "Not set" },
+                                    { label: "Discipline", value: user.discipline || "Not set" },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex justify-between items-center py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <span className="text-xs text-gray-500">{item.label}</span>
+                                        <span className="text-xs font-semibold text-gray-900">{item.value}</span>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Quick Stats Summary */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
-                                    <div className="text-2xl font-display text-octagon-red">{userStats?.accuracyRate || 0}%</div>
-                                    <div className="text-xs text-gray-400">Accuracy</div>
+                            {/* Quick stats */}
+                            <div className="grid grid-cols-2 gap-3 mb-5">
+                                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-center">
+                                    <p className="text-2xl font-black text-red-600">{userStats?.accuracyRate ?? 0}%</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Accuracy</p>
                                 </div>
-                                <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
-                                    <div className="text-2xl font-display text-octagon-red">{userStats?.predictionsMade || 0}</div>
-                                    <div className="text-xs text-gray-400">Predictions</div>
+                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-center">
+                                    <p className="text-2xl font-black text-amber-600">{userStats?.predictionsMade ?? 0}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Predictions</p>
                                 </div>
                             </div>
 
-                            {/* Edit Profile Link */}
-                            <Link href="/profile" className="block mt-6">
-                                <Button variant="outline" className="w-full group">
-                                    <span>Edit Profile</span>
-                                    <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                </Button>
+                            <Link href="/profile"
+                                className="flex items-center justify-center gap-2 w-full py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors"
+                            >
+                                Edit Profile <ChevronRight className="w-4 h-4" />
                             </Link>
-                        </Card>
+                        </div>
+
+                        {/* UFC Tip Card */}
+                        <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-5 text-white shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Sword className="w-4 h-4 text-red-200" />
+                                <span className="text-xs font-bold uppercase tracking-wide text-red-200">Training Tip</span>
+                            </div>
+                            <p className="text-sm font-semibold leading-relaxed">
+                                Consistency beats intensity. Train 4× per week with purpose rather than 7× with fatigue.
+                            </p>
+                            <Link href="/training" className="inline-flex items-center gap-1 text-xs text-red-200 hover:text-white font-bold mt-3 transition-colors">
+                                Start roadmap <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
                     </motion.div>
                 </div>
             </motion.div>

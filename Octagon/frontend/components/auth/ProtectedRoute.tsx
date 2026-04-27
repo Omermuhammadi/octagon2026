@@ -54,7 +54,14 @@ export function PublicOnlyRoute({ children }: ProtectedRouteProps) {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated && user) {
-            const dashboardPath = user.role === "coach" ? "/dashboard/coach" : "/dashboard/fan";
+            const dashboardPath =
+                user.role === "coach"
+                    ? "/dashboard/coach"
+                    : user.role === "fighter"
+                        ? "/dashboard/fighter"
+                        : user.role === "beginner"
+                            ? "/dashboard/beginner"
+                            : "/dashboard/fan";
             router.push(dashboardPath);
         }
     }, [isLoading, isAuthenticated, user, router]);

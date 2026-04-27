@@ -1,12 +1,23 @@
 @import "tailwindcss";
 
 @theme {
+  /* UFC-inspired palette */
   --color-octagon-black: #0a0a0a;
-  --color-octagon-dark: #121212;
-  --color-octagon-red: #D20A0A;
-  --color-octagon-gold: #C5B358;
+  --color-octagon-dark: #111111;
+  --color-octagon-red: #DC2626;
+  --color-octagon-gold: #F59E0B;
   --color-octagon-gray: #F5F5F5;
-  --color-octagon-silver: #A0A0A0;
+  --color-octagon-silver: #6B7280;
+
+  /* Light surface tokens */
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F8F9FA;
+  --color-surface-raised: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-border-strong: #D1D5DB;
+  --color-text-primary: #111111;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
 
   --font-sans: var(--font-inter), sans-serif;
   --font-heading: var(--font-outfit), sans-serif;
@@ -14,29 +25,37 @@
 }
 
 :root {
-  --foreground-rgb: 245, 245, 245;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 18, 18, 18;
+  --foreground-rgb: 17, 17, 17;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 248, 249, 250;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background-color: var(--color-octagon-black);
+  background-color: #ffffff;
   min-height: 100vh;
   font-family: var(--font-sans);
   overflow-x: hidden;
 }
 
+/* ─── Utility classes ──────────────────────────────────────────── */
+
 @utility text-balance {
   text-wrap: balance;
 }
 
+/* Dark glass — used only in hero / dark sections */
 @utility glass-panel {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+  @apply bg-white/10 backdrop-blur-xl border border-white/15 shadow-2xl;
+}
+
+/* Light card — default for content areas */
+@utility light-card {
+  @apply bg-white border border-gray-200 shadow-sm rounded-xl;
 }
 
 @utility neon-text {
-  text-shadow: 0 0 20px rgba(210, 10, 10, 0.6);
+  text-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
 }
 
 @utility skew-button {
@@ -48,12 +67,12 @@ body {
 }
 
 @utility text-outline {
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.15);
   color: transparent;
 }
 
 @utility text-outline-red {
-  -webkit-text-stroke: 1px rgba(210, 10, 10, 0.5);
+  -webkit-text-stroke: 1px rgba(220, 38, 38, 0.6);
   color: transparent;
 }
 
@@ -62,17 +81,42 @@ body {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
 }
 
-/* Octagon badge variant */
 .octagon-badge {
   clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
 }
 
-/* Octagon avatar */
 .octagon-avatar {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
 }
 
-/* Focus visible styles for accessibility */
+/* Focus ring */
 @utility focus-ring {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-octagon-red focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-octagon-red focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+}
+
+/* ─── Dark hero section (home hero, page banners) ──────────────── */
+.section-hero {
+  background-color: #111111;
+  color: #ffffff;
+}
+
+/* ─── Page content section (white bg) ─────────────────────────── */
+.section-content {
+  background-color: #ffffff;
+  color: #111111;
+}
+
+/* ─── Scrollbar (subtle, matches light theme) ─────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

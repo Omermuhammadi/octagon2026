@@ -28,8 +28,8 @@ export default function LoginPage() {
     // Show loading while checking auth state or if authenticated (redirecting)
     if (authLoading || isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-octagon-red" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
         );
     }
@@ -74,23 +74,21 @@ export default function LoginPage() {
             </div>
 
             {/* Right Side - Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-                {/* Background glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-octagon-red/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative bg-white">
 
                 <div className="w-full max-w-md space-y-8 relative z-10">
                     <div className="text-center">
-                        <h1 className="text-3xl font-display italic text-white mb-2">WELCOME BACK</h1>
-                        <p className="text-gray-400">Enter your credentials to access your dashboard.</p>
+                        <h1 className="text-3xl font-display italic text-gray-900 mb-2">WELCOME BACK</h1>
+                        <p className="text-gray-500">Enter your credentials to access your dashboard.</p>
                     </div>
 
                     {/* Toggle */}
-                    <div className="flex p-1 bg-white/5 rounded-lg mb-8">
-                        <button className="flex-1 py-2 text-sm font-bold uppercase tracking-wider bg-white/10 text-white rounded-md shadow-sm transition-all">
+                    <div className="flex p-1 bg-gray-100 rounded-lg mb-8">
+                        <button className="flex-1 py-2 text-sm font-bold uppercase tracking-wider bg-white text-gray-900 rounded-md shadow-sm transition-all">
                             Log In
                         </button>
                         <Link href="/register" className="flex-1">
-                            <button className="w-full py-2 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-all">
+                            <button className="w-full py-2 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-all">
                                 Sign Up
                             </button>
                         </Link>
@@ -106,7 +104,7 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="fighter@octagon.com"
                                     required
-                                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-red focus:ring-octagon-red"
+                                    className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-red-500"
                                 />
                             </div>
                             <div>
@@ -117,7 +115,7 @@ export default function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     required
-                                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-octagon-red focus:ring-octagon-red"
+                                    className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-red-500"
                                 />
                             </div>
                         </div>
@@ -126,7 +124,7 @@ export default function LoginPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="p-3 rounded bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-500 text-sm"
+                                className="p-3 rounded bg-red-50 border border-red-200 flex items-center gap-2 text-red-600 text-sm"
                             >
                                 <AlertCircle className="w-4 h-4" />
                                 {error}
@@ -135,10 +133,10 @@ export default function LoginPage() {
 
                         <div className="flex items-center justify-between text-sm">
                             <label className="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" className="rounded bg-white/10 border-white/20 text-octagon-red focus:ring-octagon-red" />
-                                <span className="text-gray-400 group-hover:text-white transition-colors">Remember me</span>
+                                <input type="checkbox" className="rounded border-gray-300 text-red-600 focus:ring-red-500" />
+                                <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
                             </label>
-                            <Link href="/forgot-password" className="text-octagon-red hover:text-red-400 transition-colors">
+                            <Link href="/forgot-password" className="text-red-600 hover:text-red-700 transition-colors">
                                 Forgot password?
                             </Link>
                         </div>

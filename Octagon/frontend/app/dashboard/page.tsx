@@ -16,10 +16,13 @@ export default function DashboardPage() {
             return;
         }
         if (user) {
-            // Route all roles to the appropriate dashboard
-            // fighter and beginner roles use the fan dashboard
-            const dashboardRole = (user.role === 'coach') ? 'coach' : 'fan';
-            router.push(`/dashboard/${dashboardRole}`);
+            const roleRoutes: Record<string, string> = {
+                coach: '/dashboard/coach',
+                fighter: '/dashboard/fighter',
+                fan: '/dashboard/fan',
+                beginner: '/dashboard/beginner',
+            };
+            router.push(roleRoutes[user.role] ?? '/dashboard/fan');
         }
     }, [isLoading, isAuthenticated, user, router]);
 

@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware';
 import { Fighter, Prediction } from '../models';
 import { predict } from '../services/predictionEngine';
+import path from 'path';
+import fs from 'fs';
 
 // Escape user input for safe use in $regex (prevents ReDoS)
 function escapeRegex(str: string): string {
@@ -90,6 +92,32 @@ export const createPrediction = async (req: AuthRequest, res: Response): Promise
       });
     }
 
+    // Load model stats for transparency panel
+    let modelStats = {
+      modelType: 'Ensemble (LR + GBT)',
+      samples: 8400,
+      features: 27,
+      cvAccuracy: 0,
+    };
+    try {
+      const modelPath = path.join(__dirname, '..', '..', 'data', 'model-weights.json');
+      if (fs.existsSync(modelPath)) {
+        const raw = JSON.parse(fs.readFileSync(modelPath, 'utf-8'));
+        const ts = raw.trainingStats;
+        if (ts) {
+          modelStats.samples = ts.samples || 8400;
+          modelStats.cvAccuracy = ts.cvAccuracy || ts.accuracy || 0;
+        }
+      }
+    } catch {}
+
+    // Derive counterfactual hint from lowest-impact factor for the predicted loser
+    const loserFactors = result.topFactors.filter(f => f.description.startsWith(result.loser));
+    const loserEdge = loserFactors.length > 0 ? loserFactors[loserFactors.length - 1] : null;
+    const counterfactual = loserEdge
+      ? `If ${result.loser} improved in "${loserEdge.factor}", the outcome probability would shift closer to 50%.`
+      : null;
+
     res.json({
       success: true,
       data: {
@@ -112,6 +140,8 @@ export const createPrediction = async (req: AuthRequest, res: Response): Promise
           confidence: result.confidence,
           factors: result.topFactors.map(f => f.description),
           topFactors: result.topFactors,
+          modelStats,
+          counterfactual,
         },
       },
     });

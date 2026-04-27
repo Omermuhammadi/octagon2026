@@ -146,8 +146,11 @@ Frontend URL: ${config.frontendUrl}
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Failed to start server:', (error as Error).message);
+    console.warn('Starting server anyway on port', PORT);
+    app.listen(PORT, () => {
+      console.log(`Octagon Oracle API running on port ${PORT} (limited mode)`);
+    });
   }
 };
 

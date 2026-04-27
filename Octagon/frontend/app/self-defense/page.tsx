@@ -348,10 +348,10 @@ export default function SelfDefensePage() {
 
     const getThreatColor = (threat: string) => {
         switch (threat) {
-            case "high": return "bg-red-500/20 text-red-400 border-red-500/30";
-            case "medium": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-            case "low": return "bg-green-500/20 text-green-400 border-green-500/30";
-            default: return "bg-gray-500/20 text-gray-400";
+            case "high": return "bg-red-100 text-red-700 border-red-200";
+            case "medium": return "bg-amber-100 text-amber-700 border-amber-200";
+            case "low": return "bg-green-100 text-green-700 border-green-200";
+            default: return "bg-gray-100 text-gray-600 border-gray-200";
         }
     };
 
@@ -410,14 +410,14 @@ export default function SelfDefensePage() {
 
     if (isLoading || !isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black pt-24 pb-16">
+        <div className="min-h-screen bg-gray-50 pt-24 pb-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 {/* Header */}
@@ -426,14 +426,14 @@ export default function SelfDefensePage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 mb-6">
-                        <Shield className="w-4 h-4 text-red-500" />
-                        <span className="text-red-400 text-sm font-medium">25+ Real-World Scenarios</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-100 mb-6">
+                        <Shield className="w-4 h-4 text-red-600" />
+                        <span className="text-red-600 text-sm font-medium">25+ Real-World Scenarios</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-display italic text-white mb-4">
-                        SELF-DEFENSE <span className="text-octagon-red">GUIDE</span>
+                    <h1 className="text-4xl md:text-5xl font-display italic text-gray-900 mb-4">
+                        SELF-DEFENSE <span className="text-red-600">GUIDE</span>
                     </h1>
-                    <p className="text-neutral-400 max-w-2xl mx-auto text-lg">
+                    <p className="text-gray-500 max-w-2xl mx-auto text-lg">
                         Learn how to protect yourself in any situation. Browse scenarios, get expert advice, and chat with our AI assistant.
                     </p>
                 </motion.div>
@@ -451,29 +451,29 @@ export default function SelfDefensePage() {
                         { icon: Zap, label: "Techniques", value: "50+" },
                         { icon: Clock, label: "Avg. Read", value: "3 min" }
                     ].map((stat, idx) => (
-                        <div key={idx} className="bg-neutral-900/50 rounded-xl p-4 border border-white/5 text-center">
-                            <stat.icon className="w-6 h-6 text-red-500 mx-auto mb-2" />
-                            <p className="text-2xl font-bold text-white">{stat.value}</p>
-                            <p className="text-neutral-500 text-sm">{stat.label}</p>
+                        <div key={idx} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center">
+                            <stat.icon className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                            <p className="text-gray-500 text-sm">{stat.label}</p>
                         </div>
                     ))}
                 </motion.div>
 
                 {/* Women's Safety Section */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                    className="mb-12 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl border border-purple-500/20 p-6 md:p-8"
+                    className="mb-12 bg-purple-50 rounded-2xl border border-purple-200 p-6 md:p-8"
                 >
-                    <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
-                        <Shield className="w-6 h-6 text-purple-400" />
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                        <Shield className="w-6 h-6 text-purple-600" />
                         Women&apos;s Safety Guide
                     </h2>
-                    <p className="text-neutral-400 mb-6">
+                    <p className="text-gray-600 mb-6">
                         Practical safety tips and self-defense techniques designed specifically for women, covering awareness, prevention, and response strategies.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-black/30 rounded-xl border border-white/5">
-                            <h3 className="text-white font-semibold mb-2">Situational Awareness</h3>
-                            <ul className="space-y-2 text-sm text-neutral-400">
+                        <div className="p-4 bg-white rounded-xl border border-purple-100">
+                            <h3 className="text-gray-900 font-semibold mb-2">Situational Awareness</h3>
+                            <ul className="space-y-2 text-sm text-gray-600">
                                 <li>- Stay aware of your surroundings, especially at night</li>
                                 <li>- Trust your instincts - if something feels wrong, leave</li>
                                 <li>- Keep your phone charged and share your location</li>
@@ -481,9 +481,9 @@ export default function SelfDefensePage() {
                                 <li>- Park in well-lit areas and check your surroundings before exiting</li>
                             </ul>
                         </div>
-                        <div className="p-4 bg-black/30 rounded-xl border border-white/5">
-                            <h3 className="text-white font-semibold mb-2">Key Techniques</h3>
-                            <ul className="space-y-2 text-sm text-neutral-400">
+                        <div className="p-4 bg-white rounded-xl border border-purple-100">
+                            <h3 className="text-gray-900 font-semibold mb-2">Key Techniques</h3>
+                            <ul className="space-y-2 text-sm text-gray-600">
                                 <li>- Palm strike to the nose - simple, effective, no training needed</li>
                                 <li>- Knee to groin - close range, high impact</li>
                                 <li>- Wrist escape - when someone grabs your wrist, rotate towards the thumb</li>
@@ -491,9 +491,9 @@ export default function SelfDefensePage() {
                                 <li>- Bear hug escape - drop weight, create space, strike and run</li>
                             </ul>
                         </div>
-                        <div className="p-4 bg-black/30 rounded-xl border border-white/5">
-                            <h3 className="text-white font-semibold mb-2">Prevention Strategies</h3>
-                            <ul className="space-y-2 text-sm text-neutral-400">
+                        <div className="p-4 bg-white rounded-xl border border-purple-100">
+                            <h3 className="text-gray-900 font-semibold mb-2">Prevention Strategies</h3>
+                            <ul className="space-y-2 text-sm text-gray-600">
                                 <li>- Walk with confidence and purpose</li>
                                 <li>- Use the buddy system when possible</li>
                                 <li>- Tell someone where you are going</li>
@@ -501,9 +501,9 @@ export default function SelfDefensePage() {
                                 <li>- Take a self-defense class at a local gym</li>
                             </ul>
                         </div>
-                        <div className="p-4 bg-black/30 rounded-xl border border-white/5">
-                            <h3 className="text-white font-semibold mb-2">Emergency Resources (Pakistan)</h3>
-                            <ul className="space-y-2 text-sm text-neutral-400">
+                        <div className="p-4 bg-white rounded-xl border border-purple-100">
+                            <h3 className="text-gray-900 font-semibold mb-2">Emergency Resources (Pakistan)</h3>
+                            <ul className="space-y-2 text-sm text-gray-600">
                                 <li>- Police Emergency: 15</li>
                                 <li>- Women&apos;s Helpline: 1099</li>
                                 <li>- Edhi Foundation: 115</li>
@@ -521,7 +521,7 @@ export default function SelfDefensePage() {
                     transition={{ delay: 0.2 }}
                     className="mb-8"
                 >
-                    <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-4">
+                    <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
                         Filter by Category
                     </h2>
                     <div className="flex flex-wrap gap-2">
@@ -531,8 +531,8 @@ export default function SelfDefensePage() {
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                     selectedCategory === cat
-                                        ? "bg-red-500 text-white"
-                                        : "bg-white/5 text-neutral-400 hover:bg-white/10"
+                                        ? "bg-red-600 text-white"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                 }`}
                             >
                                 {cat}
@@ -557,25 +557,25 @@ export default function SelfDefensePage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.05 }}
                                 onClick={() => setSelectedScenario(scenario)}
-                                className="bg-neutral-900/50 rounded-2xl p-6 border border-white/5 hover:border-red-500/30 cursor-pointer transition-all group"
+                                className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:border-red-200 hover:shadow-md cursor-pointer transition-all group"
                             >
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                        <Icon className="w-6 h-6 text-red-500" />
+                                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                                        <Icon className="w-6 h-6 text-red-600" />
                                     </div>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getThreatColor(scenario.threat)}`}>
                                         {scenario.threat.toUpperCase()}
                                     </span>
                                 </div>
-                                <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-red-400 transition-colors">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
                                     {scenario.title}
                                 </h3>
-                                <p className="text-neutral-500 text-sm mb-4 line-clamp-2">
+                                <p className="text-gray-500 text-sm mb-4 line-clamp-2">
                                     {scenario.description}
                                 </p>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-neutral-600">{scenario.category}</span>
-                                    <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-red-500 transition-colors" />
+                                    <span className="text-xs text-gray-400">{scenario.category}</span>
+                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors" />
                                 </div>
                             </motion.div>
                         );
@@ -587,25 +587,25 @@ export default function SelfDefensePage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="bg-gradient-to-r from-red-900/30 to-red-800/20 rounded-2xl p-6 border border-red-500/20 mb-8"
+                    className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-8 shadow-md"
                 >
                     <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-3">
-                            <Phone className="w-6 h-6 text-red-500" />
+                            <Phone className="w-6 h-6 text-red-200" />
                             <div>
                                 <p className="text-white font-semibold">Emergency: 911</p>
-                                <p className="text-neutral-400 text-sm">Immediate danger</p>
+                                <p className="text-red-200 text-sm">Immediate danger</p>
                             </div>
                         </div>
-                        <div className="w-px h-10 bg-white/10 hidden md:block" />
+                        <div className="w-px h-10 bg-white/30 hidden md:block" />
                         <div>
                             <p className="text-white font-semibold">National DV Hotline</p>
-                            <p className="text-neutral-400 text-sm">1-800-799-7233</p>
+                            <p className="text-red-200 text-sm">1-800-799-7233</p>
                         </div>
-                        <div className="w-px h-10 bg-white/10 hidden md:block" />
+                        <div className="w-px h-10 bg-white/30 hidden md:block" />
                         <div>
                             <p className="text-white font-semibold">Crisis Text Line</p>
-                            <p className="text-neutral-400 text-sm">Text HOME to 741741</p>
+                            <p className="text-red-200 text-sm">Text HOME to 741741</p>
                         </div>
                     </div>
                 </motion.div>
@@ -626,37 +626,37 @@ export default function SelfDefensePage() {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-neutral-900 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-white/10"
+                            className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-200 shadow-2xl"
                         >
-                            <div className="p-6 border-b border-white/10 sticky top-0 bg-neutral-900 z-10">
+                            <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getThreatColor(selectedScenario.threat)}`}>
                                             {selectedScenario.threat.toUpperCase()} THREAT
                                         </span>
-                                        <h2 className="text-2xl font-bold text-white mt-2">{selectedScenario.title}</h2>
-                                        <p className="text-neutral-500 text-sm">{selectedScenario.category}</p>
+                                        <h2 className="text-2xl font-bold text-gray-900 mt-2">{selectedScenario.title}</h2>
+                                        <p className="text-gray-500 text-sm">{selectedScenario.category}</p>
                                     </div>
                                     <button
                                         onClick={() => setSelectedScenario(null)}
-                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                                     >
-                                        <X className="w-5 h-5 text-neutral-400" />
+                                        <X className="w-5 h-5 text-gray-400" />
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div className="p-6 space-y-6">
                                 <div>
-                                    <h3 className="text-sm font-medium text-neutral-500 uppercase mb-2">Scenario</h3>
-                                    <p className="text-white">{selectedScenario.description}</p>
+                                    <h3 className="text-sm font-medium text-gray-500 uppercase mb-2">Scenario</h3>
+                                    <p className="text-gray-900">{selectedScenario.description}</p>
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-medium text-neutral-500 uppercase mb-3">Key Points</h3>
+                                    <h3 className="text-sm font-medium text-gray-500 uppercase mb-3">Key Points</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedScenario.keyPoints.map((point, idx) => (
-                                            <span key={idx} className="px-3 py-1 bg-red-500/10 text-red-400 rounded-full text-sm">
+                                            <span key={idx} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm border border-red-100">
                                                 {point}
                                             </span>
                                         ))}
@@ -664,29 +664,29 @@ export default function SelfDefensePage() {
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="bg-green-500/5 rounded-xl p-4 border border-green-500/20">
-                                        <h3 className="text-green-400 font-semibold mb-3 flex items-center gap-2">
+                                    <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                                        <h3 className="text-green-700 font-semibold mb-3 flex items-center gap-2">
                                             <CheckCircle className="w-4 h-4" />
                                             DO
                                         </h3>
                                         <ul className="space-y-2">
                                             {selectedScenario.doList.map((item, idx) => (
-                                                <li key={idx} className="text-neutral-300 text-sm flex items-start gap-2">
-                                                    <span className="text-green-500 mt-1">✓</span>
+                                                <li key={idx} className="text-gray-700 text-sm flex items-start gap-2">
+                                                    <span className="text-green-600 mt-1">✓</span>
                                                     {item}
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
-                                    <div className="bg-red-500/5 rounded-xl p-4 border border-red-500/20">
-                                        <h3 className="text-red-400 font-semibold mb-3 flex items-center gap-2">
+                                    <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                                        <h3 className="text-red-700 font-semibold mb-3 flex items-center gap-2">
                                             <X className="w-4 h-4" />
-                                            DON'T
+                                            DON&apos;T
                                         </h3>
                                         <ul className="space-y-2">
                                             {selectedScenario.dontList.map((item, idx) => (
-                                                <li key={idx} className="text-neutral-300 text-sm flex items-start gap-2">
-                                                    <span className="text-red-500 mt-1">✗</span>
+                                                <li key={idx} className="text-gray-700 text-sm flex items-start gap-2">
+                                                    <span className="text-red-600 mt-1">✗</span>
                                                     {item}
                                                 </li>
                                             ))}
@@ -718,7 +718,7 @@ export default function SelfDefensePage() {
                         initial={{ opacity: 0, y: 100, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 100, scale: 0.9 }}
-                        className="fixed bottom-6 right-6 w-96 h-[500px] bg-neutral-900 rounded-2xl shadow-2xl border border-white/10 z-50 flex flex-col overflow-hidden"
+                        className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden"
                     >
                         {/* Chat Header */}
                         <div className="p-4 bg-gradient-to-r from-red-600 to-red-500 flex items-center justify-between">
@@ -749,8 +749,8 @@ export default function SelfDefensePage() {
                                     <div
                                         className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                                             msg.role === "user"
-                                                ? "bg-red-500 text-white rounded-br-md"
-                                                : "bg-white/10 text-white rounded-bl-md"
+                                                ? "bg-red-600 text-white rounded-br-md"
+                                                : "bg-gray-100 text-gray-800 rounded-bl-md"
                                         }`}
                                     >
                                         <p className="text-sm">{msg.content}</p>
@@ -760,7 +760,7 @@ export default function SelfDefensePage() {
                         </div>
 
                         {/* Chat Input */}
-                        <div className="p-4 border-t border-white/10">
+                        <div className="p-4 border-t border-gray-100">
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -768,7 +768,7 @@ export default function SelfDefensePage() {
                                     onChange={(e) => setInputMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                                     placeholder="Ask about self-defense..."
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-red-500/50"
+                                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-400"
                                 />
                                 <button
                                     onClick={handleSendMessage}
