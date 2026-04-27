@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
     BarChart2, TrendingUp, Calendar, Users, Loader2,
-    ChevronRight, Flame, Award, Shield, Search, Plus, X,
-    Swords, History, UserPlus, AlertCircle, Eye,
-    Activity, MessageSquare, Scale,
+    ChevronRight, Flame, Award, Shield, Search,
+    Swords, History, Eye,
+    Activity, MessageSquare, Scale, UserCheck, UserPlus, Send,
+    CheckCircle2, Clock, X,
 } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -16,9 +17,9 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectionHub } from "@/components/ConnectionHub";
 import {
-    eventApi, fighterApi, strategyApi, coachRosterApi, coachAnalyticsApi,
-    Event, CoachStats, RosterFighter, UpcomingFight, StrategyHistoryItem,
-    TraineeAnalytics, CoachAnalyticsData,
+    strategyApi, coachAnalyticsApi, relationshipApi,
+    CoachStats, StrategyHistoryItem,
+    TraineeAnalytics, CoachAnalyticsData, DiscoverAthlete, Relationship,
 } from "@/lib/api";
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
@@ -114,18 +115,9 @@ interface FighterOption { _id: string; name: string; wins: number; losses: numbe
 export default function CoachDashboard() {
     const { user, token, isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
-    const [roster, setRoster] = useState<RosterFighter[]>([]);
-    const [loadingRoster, setLoadingRoster] = useState(true);
-    const [rosterSearch, setRosterSearch] = useState("");
-    const [rosterOptions, setRosterOptions] = useState<FighterOption[]>([]);
-    const [showRosterDropdown, setShowRosterDropdown] = useState(false);
-    const [addingFighter, setAddingFighter] = useState(false);
-    const [rosterError, setRosterError] = useState("");
-    const [upcomingFights, setUpcomingFights] = useState<UpcomingFight[]>([]);
-    const [loadingUpcoming, setLoadingUpcoming] = useState(true);
     const [strategyHistory, setStrategyHistory] = useState<StrategyHistoryItem[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
-    const [coachStats, setCoachStats] = useState<CoachStats | null>(null);
+    const [coachStats] = useState<CoachStats | null>(null);
     const [scoutSearch, setScoutSearch] = useState("");
     const [scoutOptions, setScoutOptions] = useState<FighterOption[]>([]);
     const [showScoutDropdown, setShowScoutDropdown] = useState(false);
@@ -133,58 +125,92 @@ export default function CoachDashboard() {
     const [analyticsData, setAnalyticsData] = useState<CoachAnalyticsData | null>(null);
     const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
+    // Athletes / discover state
+    const [activeTrainees, setActiveTrainees] = useState<Relationship[]>([]);
+    const [discoverAthletes, setDiscoverAthletes] = useState<DiscoverAthlete[]>([]);
+    const [loadingAthletes, setLoadingAthletes] = useState(true);
+    const [discoverView, setDiscoverView] = useState(false);
+    const [requestingId, setRequestingId] = useState<string | null>(null);
+    const [athleteSearch, setAthleteSearch] = useState("");
+
     useEffect(() => {
         if (!isLoading && !isAuthenticated) router.push("/login");
         else if (!isLoading && user?.role !== "coach") router.push("/dashboard/fan");
     }, [isAuthenticated, isLoading, user, router]);
 
-    useEffect(() => { eventApi.getRecentEvents(5).catch(() => {}); }, []);
-    useEffect(() => { if (!token) return; coachRosterApi.getCoachStats(token).then(r => { if (r.success && r.data) setCoachStats(r.data); }).catch(() => {}); }, [token]);
-    useEffect(() => { if (!token) return; coachRosterApi.getRoster(token).then(r => { if (r.success && r.data) setRoster(r.data); }).catch(() => {}).finally(() => setLoadingRoster(false)); }, [token]);
-    useEffect(() => { if (!token) return; coachRosterApi.getUpcomingFights(token).then(r => { if (r.success && r.data) setUpcomingFights(r.data); }).catch(() => {}).finally(() => setLoadingUpcoming(false)); }, [token]);
+    const loadAthletes = useCallback(async () => {
+        if (!token) return;
+        setLoadingAthletes(true);
+        try {
+            const [relRes, discRes] = await Promise.all([
+                relationshipApi.list(token, 'active'),
+                relationshipApi.discover(token),
+            ]);
+            if (relRes.success && relRes.data) setActiveTrainees(relRes.data);
+            if (discRes.success && discRes.data) setDiscoverAthletes(discRes.data);
+        } catch { /* silent */ }
+        finally { setLoadingAthletes(false); }
+    }, [token]);
+
+    useEffect(() => { loadAthletes(); }, [loadAthletes]);
     useEffect(() => { if (!token) return; strategyApi.getHistory(token, 5).then(r => { if (r.success && r.data) setStrategyHistory(r.data); }).catch(() => {}).finally(() => setLoadingHistory(false)); }, [token]);
     useEffect(() => { if (!token) return; coachAnalyticsApi.getTraineeAnalytics(token).then(r => { if (r.success && r.data) setAnalyticsData(r.data); }).catch(() => {}).finally(() => setLoadingAnalytics(false)); }, [token]);
 
     useEffect(() => {
-        const handle = () => { setShowRosterDropdown(false); setShowScoutDropdown(false); };
+        const handle = () => setShowScoutDropdown(false);
         document.addEventListener("click", handle);
         return () => document.removeEventListener("click", handle);
     }, []);
 
-    const searchFighters = useCallback(async (query: string, setter: (opts: FighterOption[]) => void) => {
-        if (query.length < 2) { setter([]); return; }
-        try { const r = await fighterApi.searchFighters(query, 6); if (r.success && r.data) setter(r.data as unknown as FighterOption[]); } catch { setter([]); }
+    const searchFighters = useCallback(async (query: string) => {
+        if (query.length < 2) { setScoutOptions([]); return; }
+        try {
+            const { fighterApi } = await import("@/lib/api");
+            const r = await fighterApi.searchFighters(query, 6);
+            if (r.success && r.data) setScoutOptions(r.data as unknown as FighterOption[]);
+        } catch { setScoutOptions([]); }
     }, []);
 
-    useEffect(() => { const t = setTimeout(() => searchFighters(rosterSearch, setRosterOptions), 300); return () => clearTimeout(t); }, [rosterSearch, searchFighters]);
-    useEffect(() => { const t = setTimeout(() => searchFighters(scoutSearch, setScoutOptions), 300); return () => clearTimeout(t); }, [scoutSearch, searchFighters]);
+    useEffect(() => { const t = setTimeout(() => searchFighters(scoutSearch), 300); return () => clearTimeout(t); }, [scoutSearch, searchFighters]);
 
-    const handleAddToRoster = async (name: string) => {
-        if (!token) return;
-        setAddingFighter(true); setRosterError("");
+    const handleRequestAthlete = async (athlete: DiscoverAthlete) => {
+        if (!token || requestingId) return;
+        setRequestingId(athlete._id);
         try {
-            const r = await coachRosterApi.addFighter(name, token);
-            if (r.success && r.data) { setRoster(prev => [r.data!, ...prev]); setRosterSearch(""); setRosterOptions([]); setShowRosterDropdown(false); }
-        } catch (e: any) { setRosterError(e.message || "Failed to add fighter"); }
-        finally { setAddingFighter(false); }
+            await relationshipApi.create({ traineeId: athlete._id }, token);
+            await loadAthletes();
+        } catch { /* silent */ }
+        finally { setRequestingId(null); }
     };
 
-    const handleRemoveFromRoster = async (fighterId: string) => {
+    const handleCancelRequest = async (relId: string) => {
         if (!token) return;
-        try { await coachRosterApi.removeFighter(fighterId, token); setRoster(prev => prev.filter(r => r.fighterId !== fighterId)); } catch {}
+        try {
+            await relationshipApi.end(relId, token);
+            await loadAthletes();
+        } catch { /* silent */ }
     };
+
+    const filteredAthletes = useMemo(() => {
+        if (!athleteSearch.trim()) return discoverAthletes;
+        const q = athleteSearch.toLowerCase();
+        return discoverAthletes.filter(a =>
+            a.name.toLowerCase().includes(q) ||
+            a.role.toLowerCase().includes(q) ||
+            (a.discipline || "").toLowerCase().includes(q)
+        );
+    }, [discoverAthletes, athleteSearch]);
 
     const stats = useMemo(() => {
         if (!user) return [];
         return [
-            { label: "Roster Size", value: roster.length, icon: Users, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+            { label: "Active Trainees", value: activeTrainees.length, icon: Users, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
             { label: "Strategies Generated", value: coachStats?.strategiesGenerated ?? 0, icon: Swords, color: "text-red-600", bg: "bg-red-50", border: "border-red-100" },
-            { label: "Upcoming Fights", value: upcomingFights.length, icon: Calendar, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+            { label: "Athletes on Platform", value: discoverAthletes.length + activeTrainees.length, icon: UserPlus, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
             { label: "Avg Confidence", value: `${coachStats?.avgConfidence ?? 0}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
         ];
-    }, [user, roster, upcomingFights, coachStats]);
+    }, [user, activeTrainees, discoverAthletes, coachStats]);
 
-    const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     const greeting = () => { const h = new Date().getHours(); if (h < 12) return "Good morning"; if (h < 18) return "Good afternoon"; return "Good evening"; };
 
     if (isLoading || !user) {
@@ -310,140 +336,170 @@ export default function CoachDashboard() {
                     </div>
                 </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    {/* My Fighters Roster */}
-                    <motion.div variants={itemVariants}>
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 h-full">
-                            <div className="flex items-center justify-between mb-5">
-                                <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-amber-500" /> My Fighters
-                                </h2>
-                                <span className="text-xs text-gray-400 font-semibold">{roster.length}/20</span>
+                {/* Athletes — Manage Trainees + Discover */}
+                <motion.div variants={itemVariants} className="mb-6">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        {/* Header + tabs */}
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                                <Users className="w-5 h-5 text-amber-500" /> Athletes
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setDiscoverView(false)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!discoverView ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                                    <UserCheck className="w-3.5 h-3.5 inline mr-1" /> My Trainees
+                                </button>
+                                <button onClick={() => setDiscoverView(true)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${discoverView ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                                    <UserPlus className="w-3.5 h-3.5 inline mr-1" /> Discover
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Add fighter */}
-                            <div className="relative mb-4" onClick={e => e.stopPropagation()}>
-                                <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input type="text" value={rosterSearch}
-                                    onChange={e => { setRosterSearch(e.target.value); setShowRosterDropdown(true); }}
-                                    onFocus={() => setShowRosterDropdown(true)}
-                                    placeholder="Add fighter to roster…"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-colors"
-                                />
-                                {showRosterDropdown && rosterOptions.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl max-h-48 overflow-y-auto shadow-xl">
-                                        {rosterOptions.map(f => (
-                                            <button key={f._id} onClick={() => handleAddToRoster(f.name)} disabled={addingFighter}
-                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between"
-                                            >
-                                                <div>
-                                                    <span className="text-gray-900 text-sm font-medium">{f.name}</span>
-                                                    <span className="text-gray-400 text-xs ml-2">({f.wins}-{f.losses}-{f.draws})</span>
+                        {loadingAthletes ? (
+                            <div className="flex items-center justify-center py-10">
+                                <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                            </div>
+                        ) : !discoverView ? (
+                            /* ── MY TRAINEES ── */
+                            activeTrainees.length === 0 ? (
+                                <div className="text-center py-10">
+                                    <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                                    <p className="text-gray-500 text-sm font-semibold">No active trainees yet</p>
+                                    <p className="text-gray-400 text-xs mt-1">Switch to <button onClick={() => setDiscoverView(true)} className="text-amber-500 hover:underline font-semibold">Discover</button> to find athletes on the platform</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {activeTrainees.map(r => {
+                                        const t = r.traineeId;
+                                        return (
+                                            <div key={r._id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 hover:border-amber-200 hover:bg-amber-50/20 rounded-xl transition-colors group">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+                                                    {t.name[0]?.toUpperCase()}
                                                 </div>
-                                                <Plus className="w-4 h-4 text-amber-500" />
-                                            </button>
-                                        ))}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-gray-900 text-sm font-bold truncate">{t.name}</p>
+                                                    <p className="text-gray-400 text-xs capitalize">{t.role}{t.discipline ? ` · ${t.discipline}` : ""}</p>
+                                                </div>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Link href={`/messages?with=${t._id}`} title="Message">
+                                                        <div className="p-1.5 bg-white border border-gray-200 hover:border-amber-300 hover:text-amber-600 text-gray-400 rounded-lg transition-colors cursor-pointer">
+                                                            <MessageSquare className="w-3.5 h-3.5" />
+                                                        </div>
+                                                    </Link>
+                                                    <Link href={`/assignments?trainee=${t._id}`} title="Assign training">
+                                                        <div className="p-1.5 bg-white border border-gray-200 hover:border-red-300 hover:text-red-600 text-gray-400 rounded-lg transition-colors cursor-pointer">
+                                                            <Award className="w-3.5 h-3.5" />
+                                                        </div>
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )
+                        ) : (
+                            /* ── DISCOVER ATHLETES ── */
+                            <div>
+                                <div className="relative mb-4">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={athleteSearch}
+                                        onChange={e => setAthleteSearch(e.target.value)}
+                                        placeholder="Search by name, role, or discipline…"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-colors"
+                                    />
+                                </div>
+                                {filteredAthletes.length === 0 ? (
+                                    <p className="text-center text-gray-400 text-sm py-8">
+                                        {discoverAthletes.length === 0 ? "No new athletes on the platform yet." : "No athletes match your search."}
+                                    </p>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+                                        {filteredAthletes.map(a => {
+                                            const isPending = !!a.pendingRelId;
+                                            const isRequesting = requestingId === a._id;
+                                            const joinedDays = Math.floor((Date.now() - new Date(a.createdAt).getTime()) / 86400000);
+                                            return (
+                                                <div key={a._id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl transition-colors">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${
+                                                        a.role === 'fighter' ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                                                        a.role === 'beginner' ? 'bg-gradient-to-br from-blue-500 to-blue-700' :
+                                                        'bg-gradient-to-br from-gray-400 to-gray-600'
+                                                    }`}>
+                                                        {a.name[0]?.toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-gray-900 text-sm font-bold truncate">{a.name}</p>
+                                                        <p className="text-gray-400 text-[11px] capitalize">{a.role}{a.discipline ? ` · ${a.discipline}` : ""}</p>
+                                                        <p className="text-gray-300 text-[10px]">Joined {joinedDays === 0 ? "today" : joinedDays === 1 ? "yesterday" : `${joinedDays}d ago`}</p>
+                                                    </div>
+                                                    {isPending ? (
+                                                        <button
+                                                            onClick={() => handleCancelRequest(a.pendingRelId!)}
+                                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap"
+                                                            title="Cancel request"
+                                                        >
+                                                            <Clock className="w-3 h-3" /> Requested
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleRequestAthlete(a)}
+                                                            disabled={isRequesting}
+                                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold transition-colors disabled:opacity-60 whitespace-nowrap"
+                                                        >
+                                                            {isRequesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                                            Request
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
+                        )}
+                    </div>
+                </motion.div>
 
-                            {rosterError && (
-                                <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
-                                    <AlertCircle className="w-3 h-3" /> {rosterError}
-                                </div>
-                            )}
-
-                            {loadingRoster ? (
-                                <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-500" /></div>
-                            ) : roster.length === 0 ? (
-                                <p className="text-gray-400 text-sm text-center py-6">No fighters yet. Search above to add.</p>
-                            ) : (
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {roster.map(r => (
-                                        <div key={r._id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-amber-50 border border-gray-100 hover:border-amber-200 rounded-xl transition-all group">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-gray-900 text-sm font-semibold truncate">{r.fighterName}</p>
-                                                <p className="text-gray-500 text-xs">{r.record} | {r.stance || "N/A"}</p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Link href={`/strategy?fighter1=${encodeURIComponent(r.fighterName)}`}>
-                                                    <div className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors cursor-pointer" title="Strategy">
-                                                        <Swords className="w-3.5 h-3.5" />
-                                                    </div>
-                                                </Link>
-                                                <button onClick={() => handleRemoveFromRoster(r.fighterId)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                {/* Strategy History */}
+                <motion.div variants={itemVariants} className="mb-6">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                                <History className="w-5 h-5 text-amber-500" /> Recent Strategies
+                            </h2>
+                            <Link href="/strategy" className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5">
+                                View all <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
                         </div>
-                    </motion.div>
-
-                    {/* Strategy History + Upcoming */}
-                    <motion.div variants={itemVariants} className="space-y-5">
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
-                                    <History className="w-5 h-5 text-amber-500" /> Recent Strategies
-                                </h2>
-                                <Link href="/strategy" className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5">
-                                    View all <ChevronRight className="w-3.5 h-3.5" />
+                        {loadingHistory ? (
+                            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-amber-500" /></div>
+                        ) : strategyHistory.length === 0 ? (
+                            <div className="text-center py-4">
+                                <p className="text-gray-400 text-sm mb-3">No strategies yet.</p>
+                                <Link href="/strategy" className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors">
+                                    <Swords className="w-3 h-3" /> Create Strategy
                                 </Link>
                             </div>
-                            {loadingHistory ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-amber-500" /></div>
-                                : strategyHistory.length === 0 ? (
-                                    <div className="text-center py-4">
-                                        <p className="text-gray-400 text-sm mb-3">No strategies yet.</p>
-                                        <Link href="/strategy" className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors">
-                                            <Swords className="w-3 h-3" /> Create Strategy
-                                        </Link>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {strategyHistory.map(s => (
-                                            <Link key={s._id} href={`/strategy/${s._id}`}>
-                                                <motion.div whileHover={{ x: 3 }} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-amber-50 border border-gray-100 hover:border-amber-200 rounded-xl transition-all cursor-pointer">
-                                                    <div>
-                                                        <p className="text-gray-900 text-sm font-semibold">{s.fighter1Name} vs {s.fighter2Name}</p>
-                                                        <p className="text-gray-500 text-xs">{s.prediction?.winner} via {s.prediction?.method} · {new Date(s.createdAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                    <Eye className="w-4 h-4 text-gray-400" />
-                                                </motion.div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-4 flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-amber-500" /> Upcoming Fights
-                            </h2>
-                            {loadingUpcoming ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-amber-500" /></div>
-                                : upcomingFights.length === 0 ? <p className="text-gray-400 text-sm text-center py-4">{roster.length === 0 ? "Add fighters to track fights." : "No upcoming fights."}</p>
-                                : (
-                                    <div className="space-y-2">
-                                        {upcomingFights.slice(0, 3).map((f, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                                                <div>
-                                                    <p className="text-gray-900 text-sm font-semibold">{f.fighterName} vs {f.opponent}</p>
-                                                    <p className="text-gray-500 text-xs">{f.eventName} · {fmtDate(f.eventDate)}</p>
-                                                </div>
-                                                <Link href={`/strategy?fighter1=${encodeURIComponent(f.fighterName)}&fighter2=${encodeURIComponent(f.opponent)}`}
-                                                    className="text-xs text-red-600 hover:text-red-700 font-bold flex items-center gap-0.5"
-                                                >
-                                                    <Swords className="w-3 h-3" /> Prep
-                                                </Link>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {strategyHistory.map(s => (
+                                    <Link key={s._id} href={`/strategy/${s._id}`}>
+                                        <motion.div whileHover={{ x: 3 }} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-amber-50 border border-gray-100 hover:border-amber-200 rounded-xl transition-all cursor-pointer">
+                                            <div>
+                                                <p className="text-gray-900 text-sm font-semibold">{s.fighter1Name} vs {s.fighter2Name}</p>
+                                                <p className="text-gray-500 text-xs">{s.prediction?.winner} via {s.prediction?.method} · {new Date(s.createdAt).toLocaleDateString()}</p>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                        </div>
-                    </motion.div>
-                </div>
+                                            <Eye className="w-4 h-4 text-gray-400" />
+                                        </motion.div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
 
                 {/* Quick Actions + Scout + Profile */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

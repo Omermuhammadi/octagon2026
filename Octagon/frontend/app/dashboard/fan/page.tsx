@@ -6,11 +6,12 @@ import { useEffect, useState, useMemo } from "react";
 import {
     Target, TrendingUp, Calendar, Star, Zap, Camera,
     Trophy, Clock, ChevronRight, Flame, Award, Shield,
-    BookOpen, MapPin, BarChart2, Sword
+    BookOpen, MapPin, BarChart2, Sword, Users, MessageSquare,
+    Check, X, Loader2, UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { eventApi, statsApi, Event, UserStats } from "@/lib/api";
+import { eventApi, statsApi, relationshipApi, Event, UserStats, Relationship } from "@/lib/api";
 import { getAuthToken } from "@/contexts/AuthContext";
 
 const containerVariants = {
@@ -23,12 +24,15 @@ const itemVariants = {
 };
 
 export default function FanDashboard() {
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const { user, token: authToken, isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
     const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
     const [loadingEvents, setLoadingEvents] = useState(true);
     const [userStats, setUserStats] = useState<UserStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
+    const [relationships, setRelationships] = useState<Relationship[]>([]);
+    const [loadingRel, setLoadingRel] = useState(true);
+    const [respondingId, setRespondingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) router.push("/login");
@@ -48,6 +52,26 @@ export default function FanDashboard() {
             if (r.success && r.data) setUserStats(r.data);
         }).catch(() => {}).finally(() => setLoadingStats(false));
     }, []);
+
+    useEffect(() => {
+        const token = authToken || getAuthToken();
+        if (!token) { setLoadingRel(false); return; }
+        relationshipApi.list(token).then(r => {
+            if (r.success && r.data) setRelationships(r.data);
+        }).catch(() => {}).finally(() => setLoadingRel(false));
+    }, [authToken]);
+
+    const handleRespond = async (id: string, action: 'accept' | 'decline') => {
+        const token = authToken || getAuthToken();
+        if (!token) return;
+        setRespondingId(id);
+        try {
+            await relationshipApi.respond(id, action, token);
+            const r = await relationshipApi.list(token);
+            if (r.success && r.data) setRelationships(r.data);
+        } catch { /* silent */ }
+        finally { setRespondingId(null); }
+    };
 
     const stats = useMemo(() => {
         if (!user) return [];
@@ -131,6 +155,102 @@ export default function FanDashboard() {
                             </div>
                         </motion.div>
                     ))}
+                </motion.div>
+
+                {/* ── Coaching Section ── */}
+                <motion.div variants={itemVariants} className="mb-8">
+                    {(() => {
+                        const myCoach = relationships.find(r => r.status === 'active')?.coachId;
+                        const incoming = relationships.filter(r =>
+                            r.status === 'pending' && r.requestedBy === 'coach'
+                        );
+                        return (
+                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-red-600" /> Coaching
+                                    </h2>
+                                    {incoming.length > 0 && (
+                                        <span className="px-2.5 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                                            {incoming.length} new request{incoming.length > 1 ? "s" : ""}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {loadingRel ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                                    </div>
+                                ) : myCoach ? (
+                                    /* Active coach */
+                                    <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-xl">
+                                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center text-white text-xl font-black flex-shrink-0">
+                                            {myCoach.name[0]?.toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-500 mb-0.5">Your coach</p>
+                                            <p className="text-gray-900 font-black text-base truncate">{myCoach.name}</p>
+                                            {myCoach.discipline && <p className="text-gray-500 text-xs">{myCoach.discipline}</p>}
+                                        </div>
+                                        <Link href={`/messages?with=${myCoach._id}`}
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors"
+                                        >
+                                            <MessageSquare className="w-3.5 h-3.5" /> Message
+                                        </Link>
+                                    </div>
+                                ) : incoming.length > 0 ? (
+                                    /* Incoming requests */
+                                    <div className="space-y-3">
+                                        <p className="text-xs text-gray-500">Coaches want to work with you — accept or decline below.</p>
+                                        {incoming.map(r => (
+                                            <div key={r._id} className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center text-white font-black flex-shrink-0">
+                                                    {r.coachId.name[0]?.toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-gray-900 text-sm font-bold truncate">{r.coachId.name}</p>
+                                                    <p className="text-gray-500 text-xs">wants to coach you</p>
+                                                </div>
+                                                <div className="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => handleRespond(r._id, 'accept')}
+                                                        disabled={respondingId === r._id}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+                                                    >
+                                                        {respondingId === r._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                        Accept
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRespond(r._id, 'decline')}
+                                                        disabled={respondingId === r._id}
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-lg transition-colors"
+                                                    >
+                                                        <X className="w-3 h-3" /> Decline
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    /* No coach yet */
+                                    <div className="flex items-center gap-4 py-4">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <UserPlus className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-gray-700 font-semibold text-sm">No coach yet</p>
+                                            <p className="text-gray-400 text-xs mt-0.5">Get personalised training, assignments, and feedback from a coach.</p>
+                                        </div>
+                                        <Link href="/connections"
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+                                        >
+                                            Find a coach
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </motion.div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -54,8 +54,8 @@ export function Navbar() {
                 { label: "ASSIGNMENTS", href: "/assignments" },
                 { label: "MESSAGES", href: "/messages" },
                 { label: "STRATEGY", href: "/strategy" },
+                { label: "FORM CHECK", href: "/form-check" },
                 { label: "EVENTS", href: "/events" },
-                { label: "COMPARISON", href: "/comparison" },
                 { label: "ANALYTICS", href: "/analytics" },
             ];
         }
@@ -90,9 +90,8 @@ export function Navbar() {
             { label: "PREDICTIONS", href: "/prediction" },
             { label: "COMPARISON", href: "/comparison" },
             { label: "TRAINING", href: "/training" },
-            { label: "GYMS", href: "/gyms" },
+            { label: "FORM CHECK", href: "/form-check" },
             { label: "SELF-DEFENSE", href: "/self-defense" },
-            { label: "GEAR", href: "/gear" },
             { label: "ANALYTICS", href: "/analytics" },
         ];
     };

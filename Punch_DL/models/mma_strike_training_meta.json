@@ -1,0 +1,28 @@
+{
+  "dataset": "mma-fighter-pose-estimation-dataset\\mma-fighter-pose-estimation-dataset",
+  "train_samples": 204,
+  "val_samples": 41,
+  "window_size": 48,
+  "window_stride": 8,
+  "feature_dim": 12,
+  "label_to_idx": {
+    "jab": 0,
+    "hook": 1,
+    "kick": 2,
+    "defense": 3
+  },
+  "best_val_acc": 1.0,
+  "device": "cpu",
+  "epochs": 1,
+  "batch_size": 32,
+  "hidden_dim": 256,
+  "learning_rate": 0.0005,
+  "improvements": [
+    "Multi-heuristic pseudo-labeling with confidence scores",
+    "Reduced window stride (8) for 2x more training samples",
+    "Larger hidden dimension (256) for better capacity",
+    "Learning rate scheduler with plateau detection",
+    "Gradient clipping for stability",
+    "Confidence-weighted loss for robust training"
+  ]
+}

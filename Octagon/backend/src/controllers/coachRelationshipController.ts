@@ -34,45 +34,93 @@ export const listRelationships = async (req: AuthRequest, res: Response): Promis
 };
 
 /**
+ * GET /api/relationships/discover
+ * Coach only — browse all athletes (fan/fighter/beginner) not yet fully connected.
+ * Returns athletes with no relationship + those with only a pending outbound request.
+ */
+export const discoverAthletes = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const me = req.user!;
+    if (me.role !== 'coach') {
+      res.status(403).json({ success: false, message: 'Coach only' });
+      return;
+    }
+
+    const existingRels = await CoachRelationship.find({ coachId: me._id })
+      .select('traineeId status _id')
+      .lean();
+
+    // Athletes with active/declined/ended relationships are fully excluded
+    const excludeIds = existingRels
+      .filter((r) => ['active', 'declined', 'ended'].includes(r.status))
+      .map((r) => r.traineeId);
+
+    // Athletes with pending requests get a special flag so the UI shows "Requested"
+    const pendingMap: Record<string, string> = {};
+    existingRels
+      .filter((r) => r.status === 'pending')
+      .forEach((r) => { pendingMap[r.traineeId.toString()] = (r._id as any).toString(); });
+
+    const athletes = await User.find({
+      role: { $in: ['fighter', 'beginner', 'fan'] },
+      _id: { $nin: excludeIds, $ne: me._id },
+    })
+      .select('name email role avatar discipline experienceLevel createdAt')
+      .sort({ createdAt: -1 })
+      .limit(60)
+      .lean();
+
+    const enriched = athletes.map((a) => ({
+      ...a,
+      pendingRelId: pendingMap[(a._id as any).toString()] || null,
+    }));
+
+    res.json({ success: true, data: enriched });
+  } catch (error) {
+    console.error('Discover athletes error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
  * POST /api/relationships
  * Initiate a relationship.
- * - Coach inviting: body { traineeEmail }
+ * - Coach inviting: body { traineeId } OR { traineeEmail } (click-to-request preferred)
  * - Trainee requesting: body { coachEmail }
  */
 export const createRelationship = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const me = req.user!;
-    const { traineeEmail, coachEmail, notes } = req.body;
+    const { traineeEmail, traineeId: traineeIdParam, coachEmail, notes } = req.body;
 
     let coachId: any;
     let traineeId: any;
-    let traineeRole: 'fighter' | 'beginner';
+    let traineeRole: 'fighter' | 'beginner' | 'fan';
     let requestedBy: 'coach' | 'trainee';
     let recipientName: string;
 
     if (me.role === 'coach') {
-      if (!traineeEmail) {
-        res.status(400).json({ success: false, message: 'traineeEmail is required' });
+      if (!traineeEmail && !traineeIdParam) {
+        res.status(400).json({ success: false, message: 'traineeId or traineeEmail is required' });
         return;
       }
-      const trainee = await User.findOne({ email: traineeEmail.toLowerCase().trim() });
+      const trainee = traineeIdParam
+        ? await User.findById(traineeIdParam)
+        : await User.findOne({ email: (traineeEmail as string).toLowerCase().trim() });
       if (!trainee) {
-        res.status(404).json({ success: false, message: 'No user found with that email' });
+        res.status(404).json({ success: false, message: 'No user found' });
         return;
       }
-      if (trainee.role !== 'fighter' && trainee.role !== 'beginner') {
-        res.status(400).json({
-          success: false,
-          message: 'You can only invite fighters or beginners',
-        });
+      if (!['fighter', 'beginner', 'fan'].includes(trainee.role)) {
+        res.status(400).json({ success: false, message: 'You can only invite fighters, beginners, or fans' });
         return;
       }
       coachId = me._id;
       traineeId = trainee._id;
-      traineeRole = trainee.role as 'fighter' | 'beginner';
+      traineeRole = trainee.role as 'fighter' | 'beginner' | 'fan';
       requestedBy = 'coach';
       recipientName = trainee.name;
-    } else if (me.role === 'fighter' || me.role === 'beginner') {
+    } else if (me.role === 'fighter' || me.role === 'beginner' || me.role === 'fan') {
       if (!coachEmail) {
         res.status(400).json({ success: false, message: 'coachEmail is required' });
         return;
@@ -88,11 +136,11 @@ export const createRelationship = async (req: AuthRequest, res: Response): Promi
       }
       coachId = coach._id;
       traineeId = me._id;
-      traineeRole = me.role;
+      traineeRole = me.role as 'fighter' | 'beginner' | 'fan';
       requestedBy = 'trainee';
       recipientName = coach.name;
     } else {
-      res.status(403).json({ success: false, message: 'Fans cannot create coach relationships' });
+      res.status(403).json({ success: false, message: 'Only fighters, beginners, and fans can request a coach' });
       return;
     }
 

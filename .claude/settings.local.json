@@ -4,7 +4,8 @@
       "PowerShell(Invoke-WebRequest -Uri \"http://localhost:5001/api/health\" -UseBasicParsing)",
       "mcp__Claude_in_Chrome__tabs_context_mcp",
       "mcp__Claude_in_Chrome__browser_batch",
-      "PowerShell($d = Get-Content \"D:\\\\octagonNEW\\\\Octagon\\\\backend\\\\data\\\\model-weights.json\" | ConvertFrom-Json; Write-Host \"Keys:\" \\($d.PSObject.Properties.Name -join \", \"\\); Write-Host \"trainingStats:\" \\($d.trainingStats | ConvertTo-Json -Compress\\); Write-Host \"ensembleWeights:\" \\($d.ensembleWeights | ConvertTo-Json -Compress\\); Write-Host \"featureImportance count:\" $d.featureImportance.Count; Write-Host \"First 3 features:\" \\($d.featureImportance[0..2] | ConvertTo-Json -Compress\\))"
+      "PowerShell($d = Get-Content \"D:\\\\octagonNEW\\\\Octagon\\\\backend\\\\data\\\\model-weights.json\" | ConvertFrom-Json; Write-Host \"Keys:\" \\($d.PSObject.Properties.Name -join \", \"\\); Write-Host \"trainingStats:\" \\($d.trainingStats | ConvertTo-Json -Compress\\); Write-Host \"ensembleWeights:\" \\($d.ensembleWeights | ConvertTo-Json -Compress\\); Write-Host \"featureImportance count:\" $d.featureImportance.Count; Write-Host \"First 3 features:\" \\($d.featureImportance[0..2] | ConvertTo-Json -Compress\\))",
+      "PowerShell($result = python \"D:\\\\octagonNEW\\\\Punch_DL\\\\infer.py\" --video \"C:\\\\Windows\\\\explorer.exe\" --model \"D:\\\\octagonNEW\\\\Punch_DL\\\\models\\\\mma_strike_model.pt\" 2>&1; Write-Output \"Exit: $LASTEXITCODE\"; Write-Output $result | ConvertFrom-Json | Select-Object action, confidence, score, frames)"
     ]
   }
 }

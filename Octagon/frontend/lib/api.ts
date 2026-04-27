@@ -20,6 +20,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: unknown;
   token?: string | null;
+  timeoutMs?: number;
 }
 
 class ApiError extends Error {
@@ -38,18 +39,17 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<ApiResponse<T>> {
-  const { method = 'GET', body, token } = options;
+  const { method = 'GET', body, token, timeoutMs = 15000 } = options;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const headers: HeadersInit = isFormData ? {} : { 'Content-Type': 'application/json' };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const config: RequestInit = {
     method,
@@ -59,7 +59,7 @@ async function apiRequest<T>(
   };
 
   if (body && method !== 'GET') {
-    config.body = JSON.stringify(body);
+    config.body = isFormData ? (body as FormData) : JSON.stringify(body);
   }
 
   try {
@@ -530,10 +530,24 @@ export const gymApi = {
 // Form Check types
 export interface FormCheckResult {
   technique: string;
+  detectedTechnique?: string;
   overallScore: number;
   result: string;
   feedback: { category: string; score: number; tips: string[] }[];
-  bodyParts: { part: string; status: string; feedback: string }[];
+  bodyParts: { part: string; status: string; angle?: number; feedback: string }[];
+  source?: string;
+  model?: {
+    action: string;
+    confidence: number;
+    frames: number;
+    telemetry?: {
+      avgLandmarkConfidence: number;
+      avgVisibleLandmarks: number;
+      visibleLandmarkRatio: number;
+      previewKeypoints: Array<{ x: number; y: number; confidence: number }>;
+      angles: Record<string, number>;
+    };
+  };
 }
 
 export interface FormSessionRecord {
@@ -546,12 +560,24 @@ export interface FormSessionRecord {
 
 // Form Check API
 export const formCheckApi = {
-  analyze: (technique: string, token: string) =>
-    apiRequest<FormCheckResult>('/form-check', {
+  analyze: (technique: string, token: string, video?: File) => {
+    if (video) {
+      const payload = new FormData();
+      payload.append('technique', technique);
+      payload.append('video', video);
+      return apiRequest<FormCheckResult>('/form-check', {
+        method: 'POST',
+        body: payload,
+        token,
+        timeoutMs: 4 * 60 * 1000,
+      });
+    }
+    return apiRequest<FormCheckResult>('/form-check', {
       method: 'POST',
       body: { technique },
       token,
-    }),
+    });
+  },
 
   getHistory: (token: string) =>
     apiRequest<FormSessionRecord[]>('/form-check/history', { token }),
@@ -895,11 +921,23 @@ export interface PopulatedUserRef {
   weight?: string;
 }
 
+export interface DiscoverAthlete {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'fighter' | 'beginner' | 'fan';
+  avatar?: string;
+  discipline?: string;
+  experienceLevel?: string;
+  createdAt: string;
+  pendingRelId: string | null;
+}
+
 export interface Relationship {
   _id: string;
   coachId: PopulatedUserRef;
   traineeId: PopulatedUserRef;
-  traineeRole: 'fighter' | 'beginner';
+  traineeRole: 'fighter' | 'beginner' | 'fan';
   status: RelationshipStatus;
   requestedBy: 'coach' | 'trainee';
   notes: string;
@@ -914,7 +952,7 @@ export interface TraineeSummary {
   _id: string;
   name: string;
   email: string;
-  role: 'fighter' | 'beginner';
+  role: 'fighter' | 'beginner' | 'fan';
   avatar?: string;
   discipline?: string;
   experienceLevel?: string;
@@ -937,8 +975,11 @@ export const relationshipApi = {
   list: (token: string, status?: RelationshipStatus) =>
     apiRequest<Relationship[]>(`/relationships${status ? `?status=${status}` : ''}`, { token }),
 
-  create: (body: { traineeEmail?: string; coachEmail?: string; notes?: string }, token: string) =>
+  create: (body: { traineeId?: string; traineeEmail?: string; coachEmail?: string; notes?: string }, token: string) =>
     apiRequest<Relationship>('/relationships', { method: 'POST', body, token }),
+
+  discover: (token: string) =>
+    apiRequest<DiscoverAthlete[]>('/relationships/discover', { token }),
 
   respond: (id: string, action: 'accept' | 'decline', token: string) =>
     apiRequest<Relationship>(`/relationships/${id}/respond`, {

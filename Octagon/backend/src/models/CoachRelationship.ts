@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type RelationshipStatus = 'pending' | 'active' | 'declined' | 'ended';
-export type TraineeRole = 'fighter' | 'beginner';
+export type TraineeRole = 'fighter' | 'beginner' | 'fan';
 
 export interface ICoachRelationship extends Document {
   coachId: mongoose.Types.ObjectId;
@@ -20,7 +20,7 @@ const coachRelationshipSchema = new Schema<ICoachRelationship>(
   {
     coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     traineeId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    traineeRole: { type: String, enum: ['fighter', 'beginner'], required: true },
+    traineeRole: { type: String, enum: ['fighter', 'beginner', 'fan'], required: true },
     status: {
       type: String,
       enum: ['pending', 'active', 'declined', 'ended'],

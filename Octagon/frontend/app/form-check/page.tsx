@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -40,6 +40,7 @@ type BodyPartFeedback = {
 type TechniqueAnalysis = {
     technique: string;
     techniqueName: string;
+    detectedTechnique: string;
     overallScore: number;
     result: string;
     breakdown: {
@@ -56,7 +57,26 @@ type TechniqueAnalysis = {
     }[];
     frameCount: number;
     poseDetected: boolean;
+    landmarkConfidence: number;
+    visibleLandmarks: number;
+    angleMetrics: Record<string, number>;
+    previewKeypoints: Array<{ x: number; y: number; confidence: number }>;
 };
+
+const ACTION_TO_TECHNIQUE: Record<string, string> = {
+    box: "Box",
+    jab: "Jab-Cross Combo",
+    hook: "Lead Hook",
+    kick: "Roundhouse Kick",
+    defense: "Slip & Counter",
+};
+
+const SKELETON_EDGES: Array<[number, number]> = [
+    [0, 1], [0, 2], [1, 3], [2, 4],
+    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+    [5, 11], [6, 12], [11, 12],
+    [11, 13], [13, 15], [12, 14], [14, 16],
+];
 
 // ============================================
 // HELPER COMPONENTS
@@ -151,7 +171,7 @@ export default function FormCheckPage() {
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [analysis, setAnalysis] = useState<TechniqueAnalysis | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [selectedTechnique, setSelectedTechnique] = useState("jab-cross");
+    const [selectedTechnique, setSelectedTechnique] = useState("box");
     const [progress, setProgress] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -171,6 +191,60 @@ export default function FormCheckPage() {
             if (videoUrl) URL.revokeObjectURL(videoUrl);
         };
     }, [videoUrl]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        if (!canvas || !video || !analysis?.previewKeypoints?.length) {
+            return;
+        }
+
+        const width = video.clientWidth;
+        const height = video.clientHeight;
+        if (!width || !height) {
+            return;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+            return;
+        }
+
+        ctx.clearRect(0, 0, width, height);
+
+        for (const [a, b] of SKELETON_EDGES) {
+            const ka = analysis.previewKeypoints[a];
+            const kb = analysis.previewKeypoints[b];
+            if (!ka || !kb || ka.confidence < 0.25 || kb.confidence < 0.25) {
+                continue;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(ka.x * width, ka.y * height);
+            ctx.lineTo(kb.x * width, kb.y * height);
+            ctx.strokeStyle = "rgba(0, 255, 200, 0.72)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        for (const kpt of analysis.previewKeypoints) {
+            if (kpt.confidence < 0.2) {
+                continue;
+            }
+            const x = kpt.x * width;
+            const y = kpt.y * height;
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 69, 58, 0.85)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,255,255,0.95)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    }, [analysis]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -198,57 +272,75 @@ export default function FormCheckPage() {
     };
 
     const handleAnalyze = useCallback(async () => {
-        if (!videoRef.current || !videoUrl) return;
+        if (!videoRef.current || !videoUrl || !uploadedVideo) return;
 
         setStatus("loading-model");
         setProgress(0);
         setErrorMessage(null);
 
         try {
-            // Dynamically import pose analysis (heavy module)
-            const { analyzeVideo, initPoseDetection } = await import("@/lib/poseAnalysis");
-
-            // Initialize MediaPipe model (first time takes longer)
-            await initPoseDetection();
-
             setStatus("analyzing");
+            setProgress(20);
 
-            // Ensure video metadata is loaded
-            if (videoRef.current.readyState < 1) {
-                await new Promise<void>((resolve) => {
-                    videoRef.current!.onloadedmetadata = () => resolve();
-                    videoRef.current!.load();
-                });
+            if (!token) {
+                throw new Error("Missing authentication token");
             }
 
-            // Run analysis
-            const result = await analyzeVideo(
-                videoRef.current,
-                selectedTechnique,
-                (p) => setProgress(p)
-            );
+            const apiResponse = await formCheckApi.analyze(selectedTechnique, token, uploadedVideo);
+            const data = apiResponse.data;
 
-            setAnalysis(result as TechniqueAnalysis);
+            if (!data) {
+                throw new Error("Form analysis returned no data");
+            }
+
+            setProgress(85);
+
+            const detectedTechnique = String(data.detectedTechnique || data.model?.action || selectedTechnique).toLowerCase();
+            const techniqueName = ACTION_TO_TECHNIQUE[detectedTechnique] || techniques.find((t) => t.id === selectedTechnique)?.name || "Technique";
+
+            const keyMoments = data.feedback.slice(0, 3).map((item, idx) => ({
+                timestamp: `0:${(idx * 2).toString().padStart(2, "0")}`,
+                description: item.tips[0] || `${item.category} reviewed by model`,
+                type: item.score >= 75 ? "positive" as const : item.score >= 60 ? "neutral" as const : "negative" as const,
+            }));
+
+            setAnalysis({
+                technique: selectedTechnique,
+                techniqueName,
+                detectedTechnique,
+                overallScore: data.overallScore,
+                result: data.result,
+                breakdown: data.feedback.map((item) => ({
+                    category: item.category,
+                    score: item.score,
+                    maxScore: 100,
+                    tips: item.tips,
+                })),
+                bodyParts: data.bodyParts.map((bp) => ({
+                    part: bp.part,
+                    status: bp.status as "correct" | "needs-work" | "incorrect",
+                    feedback: bp.feedback,
+                    angle: typeof bp.angle === "number" ? bp.angle : undefined,
+                })),
+                keyMoments,
+                frameCount: Number(data.model?.frames || 0),
+                poseDetected: Number(data.model?.telemetry?.visibleLandmarkRatio || 0) > 0.2,
+                landmarkConfidence: Number(data.model?.telemetry?.avgLandmarkConfidence || 0),
+                visibleLandmarks: Number(data.model?.telemetry?.avgVisibleLandmarks || 0),
+                angleMetrics: data.model?.telemetry?.angles || {},
+                previewKeypoints: data.model?.telemetry?.previewKeypoints || [],
+            });
+
+            setProgress(100);
             setStatus("complete");
-
-            // Save to backend
-            if (token) {
-                try {
-                    await formCheckApi.analyze(selectedTechnique, token);
-                } catch {
-                    // Non-critical: backend save failed, but analysis is complete
-                }
-            }
         } catch (err: any) {
             console.error("Analysis error:", err);
             setStatus("error");
             setErrorMessage(
-                err.message?.includes("GPU")
-                    ? "GPU not available. Try using Chrome or Edge for best performance."
-                    : "Analysis failed. Please try a different video or check your browser supports WebAssembly."
+                err?.message || "Model inference failed. Verify backend, Python dependencies, and model path."
             );
         }
-    }, [videoUrl, selectedTechnique, token]);
+    }, [videoUrl, selectedTechnique, token, uploadedVideo]);
 
     const handleReset = () => {
         if (videoUrl) URL.revokeObjectURL(videoUrl);
@@ -273,10 +365,8 @@ export default function FormCheckPage() {
     };
 
     const techniques = [
-        { id: "jab-cross", name: "Jab-Cross Combo", icon: Zap },
-        { id: "hook", name: "Lead Hook", icon: Target },
+        { id: "box", name: "Box", icon: Zap },
         { id: "kick", name: "Roundhouse Kick", icon: Activity },
-        { id: "defense", name: "Slip & Counter", icon: Shield }
     ];
 
     if (isLoading || !isAuthenticated) {
@@ -520,6 +610,38 @@ export default function FormCheckPage() {
                             </motion.div>
                         )}
 
+                        {/* Detection Summary */}
+                        {analysis && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 rounded-xl bg-white/5 border border-white/10"
+                            >
+                                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                                    <p className="text-sm text-neutral-300">
+                                        Uploaded Selection: <span className="text-white font-medium">{techniques.find((t) => t.id === analysis.technique)?.name || analysis.technique}</span>
+                                    </p>
+                                    <p className="text-sm text-neutral-300">
+                                        Model Detected: <span className="text-red-400 font-semibold">{analysis.techniqueName}</span>
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                    <div className="rounded-lg bg-black/30 border border-white/10 p-3">
+                                        <p className="text-neutral-500">Visible Landmarks</p>
+                                        <p className="text-white font-semibold mt-1">{analysis.visibleLandmarks.toFixed(1)} / 17</p>
+                                    </div>
+                                    <div className="rounded-lg bg-black/30 border border-white/10 p-3">
+                                        <p className="text-neutral-500">Landmark Confidence</p>
+                                        <p className="text-white font-semibold mt-1">{Math.round(analysis.landmarkConfidence * 100)}%</p>
+                                    </div>
+                                    <div className="rounded-lg bg-black/30 border border-white/10 p-3">
+                                        <p className="text-neutral-500">Frames Analyzed</p>
+                                        <p className="text-white font-semibold mt-1">{analysis.frameCount}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
                         {/* Pose Detection Info */}
                         {analysis && (
                             <motion.div
@@ -528,7 +650,12 @@ export default function FormCheckPage() {
                                 className="p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-neutral-400"
                             >
                                 {analysis.poseDetected ? (
-                                    <p>Analyzed {analysis.frameCount} frames using MediaPipe Pose Landmarker (33 body points per frame)</p>
+                                    <p>
+                                        {analysis.frameCount > 0
+                                            ? `Analyzed ${analysis.frameCount} frames with landmark and angle extraction.`
+                                            : "Analyzed using server-side model inference."
+                                        }
+                                    </p>
                                 ) : (
                                     <p>Pose detection could not find a clear body pose. Try recording with better lighting and ensure your full body is visible.</p>
                                 )}
@@ -549,7 +676,7 @@ export default function FormCheckPage() {
                                 <div>
                                     <h3 className="text-lg font-semibold text-white">Performance Score</h3>
                                     <p className="text-neutral-500 text-sm">
-                                        {analysis ? analysis.result : "Overall technique rating"}
+                                        {analysis ? `${analysis.techniqueName} • ${analysis.result}` : "Overall technique rating"}
                                     </p>
                                 </div>
                                 {analysis && (
@@ -673,6 +800,19 @@ export default function FormCheckPage() {
                                                 )}
                                             </div>
                                         ))}
+                                        {Object.keys(analysis.angleMetrics).length > 0 && (
+                                            <div className="mt-3 p-3 rounded-lg bg-black/30 border border-white/10">
+                                                <p className="text-neutral-400 text-xs mb-2">Global angle metrics</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    {Object.entries(analysis.angleMetrics).map(([name, value]) => (
+                                                        <div key={name} className="flex items-center justify-between">
+                                                            <span className="text-neutral-500 capitalize">{name.replace(/_/g, " ")}</span>
+                                                            <span className="text-white font-medium">{typeof value === "number" ? value : "-"}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 ) : (
                                     <div className="text-center py-8">
@@ -721,9 +861,9 @@ export default function FormCheckPage() {
                             <Info className="w-6 h-6 text-red-500" />
                         </div>
                         <div>
-                            <h4 className="text-white font-semibold">MediaPipe Pose Analysis</h4>
+                            <h4 className="text-white font-semibold">Model-Only AI Form Analysis</h4>
                             <p className="text-neutral-400 text-sm">
-                                Real-time pose estimation running locally in your browser - your video never leaves your device
+                                Server-side strike model inference is required for results.
                             </p>
                         </div>
                     </div>
