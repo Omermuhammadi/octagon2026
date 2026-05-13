@@ -9,6 +9,7 @@ import {
     Swords, History, Eye,
     Activity, MessageSquare, Scale, UserCheck, UserPlus, Send,
     CheckCircle2, Clock, X,
+    BookOpen, Dumbbell, Target, MapPin,
 } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -17,9 +18,10 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectionHub } from "@/components/ConnectionHub";
 import {
-    strategyApi, coachAnalyticsApi, relationshipApi,
+    strategyApi, coachAnalyticsApi, relationshipApi, roadmapApi,
     CoachStats, StrategyHistoryItem,
     TraineeAnalytics, CoachAnalyticsData, DiscoverAthlete, Relationship,
+    TraineeRoadmapSummary,
 } from "@/lib/api";
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
@@ -133,6 +135,10 @@ export default function CoachDashboard() {
     const [requestingId, setRequestingId] = useState<string | null>(null);
     const [athleteSearch, setAthleteSearch] = useState("");
 
+    // Trainee roadmap progress
+    const [traineeRoadmaps, setTraineeRoadmaps] = useState<TraineeRoadmapSummary[]>([]);
+    const [loadingTraineeRoadmaps, setLoadingTraineeRoadmaps] = useState(true);
+
     useEffect(() => {
         if (!isLoading && !isAuthenticated) router.push("/login");
         else if (!isLoading && user?.role !== "coach") router.push("/dashboard/fan");
@@ -155,6 +161,14 @@ export default function CoachDashboard() {
     useEffect(() => { loadAthletes(); }, [loadAthletes]);
     useEffect(() => { if (!token) return; strategyApi.getHistory(token, 5).then(r => { if (r.success && r.data) setStrategyHistory(r.data); }).catch(() => {}).finally(() => setLoadingHistory(false)); }, [token]);
     useEffect(() => { if (!token) return; coachAnalyticsApi.getTraineeAnalytics(token).then(r => { if (r.success && r.data) setAnalyticsData(r.data); }).catch(() => {}).finally(() => setLoadingAnalytics(false)); }, [token]);
+    useEffect(() => {
+        if (!token) return;
+        setLoadingTraineeRoadmaps(true);
+        roadmapApi.getTraineeProgress(token)
+            .then((r) => { if (r.success && r.data) setTraineeRoadmaps(r.data); })
+            .catch(() => {})
+            .finally(() => setLoadingTraineeRoadmaps(false));
+    }, [token]);
 
     useEffect(() => {
         const handle = () => setShowScoutDropdown(false);
@@ -331,6 +345,182 @@ export default function CoachDashboard() {
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* === Trainee Roadmap Progress (NEW) === */}
+                <motion.div variants={itemVariants} className="mb-8">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-red-600" /> Trainee Roadmap Progress
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Live view of every trainee's training roadmap — concept-checks, drill time, and per-week progress.
+                                </p>
+                            </div>
+                            <span className="text-xs text-gray-400 font-semibold whitespace-nowrap">
+                                {traineeRoadmaps.filter(t => t.roadmaps.length > 0).length} active
+                            </span>
+                        </div>
+
+                        {loadingTraineeRoadmaps ? (
+                            <div className="flex items-center justify-center py-10">
+                                <Loader2 className="w-5 h-5 animate-spin text-red-500" />
+                            </div>
+                        ) : traineeRoadmaps.length === 0 ? (
+                            <div className="text-center py-8 px-4">
+                                <MapPin className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                                <p className="text-gray-500 text-sm font-semibold">No active trainees yet.</p>
+                                <p className="text-gray-400 text-xs mt-1">
+                                    Once you connect with athletes from <Link href="/connections" className="text-red-600 hover:underline font-semibold">Connections</Link>, their roadmap progress shows up here.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {traineeRoadmaps.map((t) => {
+                                    const hasRoadmaps = t.roadmaps.length > 0;
+                                    const primary = hasRoadmaps
+                                        ? [...t.roadmaps].sort((a, b) => b.completionPct - a.completionPct)[0]
+                                        : null;
+                                    const lastActive = primary
+                                        ? Math.floor((Date.now() - new Date(primary.lastActiveAt).getTime()) / 86400000)
+                                        : null;
+                                    const isStale = lastActive != null && lastActive > 5;
+                                    return (
+                                        <div
+                                            key={t.traineeId}
+                                            className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:border-red-200 hover:shadow-md transition-all"
+                                        >
+                                            {/* Header */}
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${
+                                                    t.role === 'fighter' ? "bg-gradient-to-br from-red-500 to-red-700"
+                                                    : t.role === 'beginner' ? "bg-gradient-to-br from-blue-500 to-blue-700"
+                                                    : "bg-gradient-to-br from-gray-500 to-gray-700"
+                                                }`}>
+                                                    {t.name[0]?.toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-gray-900 font-bold text-sm truncate">{t.name}</p>
+                                                    <p className="text-[11px] text-gray-500 capitalize">
+                                                        {t.role}{t.discipline ? ` · ${t.discipline}` : ""}
+                                                    </p>
+                                                </div>
+                                                <Link href={`/messages?with=${t.traineeId}`}>
+                                                    <div className="p-1.5 bg-white border border-gray-200 hover:border-red-300 hover:text-red-600 text-gray-400 rounded-lg transition-colors cursor-pointer" title="Message">
+                                                        <MessageSquare className="w-3.5 h-3.5" />
+                                                    </div>
+                                                </Link>
+                                            </div>
+
+                                            {!hasRoadmaps ? (
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 italic flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3" /> Hasn't started a roadmap yet
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {/* Primary roadmap progress */}
+                                                    <div className="mb-3">
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <p className="text-[11px] font-bold text-gray-700 truncate">
+                                                                {primary!.discipline} · Week {primary!.currentWeek}/{primary!.totalWeeks}
+                                                            </p>
+                                                            <span className={`text-xs font-bold tabular-nums ${
+                                                                primary!.completionPct >= 80 ? "text-emerald-600"
+                                                                : primary!.completionPct >= 40 ? "text-amber-600"
+                                                                : "text-red-600"
+                                                            }`}>
+                                                                {primary!.completionPct}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all ${
+                                                                    primary!.completionPct >= 80 ? "bg-emerald-500"
+                                                                    : primary!.completionPct >= 40 ? "bg-amber-500"
+                                                                    : "bg-red-500"
+                                                                }`}
+                                                                style={{ width: `${primary!.completionPct}%` }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 mt-1">
+                                                            {primary!.completedSteps} of {primary!.totalSteps} steps
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Per-week dots */}
+                                                    <div className="flex items-center gap-1 mb-3">
+                                                        {Array.from({ length: primary!.totalWeeks }).map((_, i) => {
+                                                            const wKey = `week${i + 1}`;
+                                                            const wp = primary!.weekProgress[wKey] || { completed: 0, total: 4 };
+                                                            const pct = wp.total > 0 ? (wp.completed / wp.total) * 100 : 0;
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    title={`Week ${i + 1}: ${wp.completed}/${wp.total}`}
+                                                                    className={`flex-1 h-1.5 rounded-full ${
+                                                                        pct === 100 ? "bg-emerald-500"
+                                                                        : pct > 0 ? "bg-amber-400"
+                                                                        : "bg-gray-200"
+                                                                    }`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Quiz + Drill time */}
+                                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                                        <div className="bg-white border border-gray-100 rounded-lg p-2 text-center">
+                                                            <BookOpen className="w-3 h-3 text-emerald-500 mx-auto mb-0.5" />
+                                                            <p className="text-[10px] text-gray-400 font-semibold">Quizzes</p>
+                                                            <p className="text-xs font-bold text-gray-900 tabular-nums">{primary!.quizzesTaken}</p>
+                                                        </div>
+                                                        <div className="bg-white border border-gray-100 rounded-lg p-2 text-center">
+                                                            <Target className="w-3 h-3 text-blue-500 mx-auto mb-0.5" />
+                                                            <p className="text-[10px] text-gray-400 font-semibold">Avg Score</p>
+                                                            <p className="text-xs font-bold text-gray-900 tabular-nums">
+                                                                {primary!.avgQuizScore != null ? `${primary!.avgQuizScore}%` : "—"}
+                                                            </p>
+                                                        </div>
+                                                        <div className="bg-white border border-gray-100 rounded-lg p-2 text-center">
+                                                            <Dumbbell className="w-3 h-3 text-amber-500 mx-auto mb-0.5" />
+                                                            <p className="text-[10px] text-gray-400 font-semibold">Drilled</p>
+                                                            <p className="text-xs font-bold text-gray-900 tabular-nums">
+                                                                {primary!.minutesTrained >= 60 ? `${Math.round(primary!.minutesTrained / 60 * 10) / 10}h` : `${primary!.minutesTrained}m`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Recent practice */}
+                                                    {primary!.recentPractice.length > 0 && (
+                                                        <div className="bg-amber-50/60 border border-amber-100 rounded-lg p-2.5">
+                                                            <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                                                <Flame className="w-2.5 h-2.5" /> Latest log
+                                                            </p>
+                                                            {primary!.recentPractice.slice(0, 1).map((p, i) => (
+                                                                <div key={i} className="text-[11px] text-amber-900">
+                                                                    <span className="font-bold">{p.minutes}m</span>
+                                                                    {p.notes && <span className="italic"> · "{p.notes.length > 60 ? p.notes.slice(0, 60) + "…" : p.notes}"</span>}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Stale flag */}
+                                                    {isStale && (
+                                                        <p className="text-[10px] text-red-500 font-semibold mt-2 flex items-center gap-1">
+                                                            <Clock className="w-2.5 h-2.5" /> Inactive for {lastActive}d — consider checking in
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

@@ -3,14 +3,19 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { roadmapApi, RoadmapProgressData, fighterTrainingApi, FighterTrainingAssignment, coachRosterApi, RosterFighter } from "@/lib/api";
+import {
+    roadmapApi, RoadmapProgressData, RoadmapQuizResult, RoadmapPracticeEntry,
+    fighterTrainingApi, FighterTrainingAssignment, coachRosterApi, RosterFighter,
+} from "@/lib/api";
 import {
     ChevronDown, CheckCircle2, Circle,
     Trophy, Dumbbell, Shield, Target, Clock, Users,
     Loader2, Zap, Star, Lock, Play, X,
-    Flame, Award, ArrowLeft, Trash2, ClipboardList, Plus, ChevronRight, AlertCircle
+    Flame, Award, ArrowLeft, Trash2, ClipboardList, Plus, ChevronRight, AlertCircle,
+    BookOpen, Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import StepDetailModal from "./StepDetailModal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -680,6 +685,10 @@ export default function TrainingPage() {
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [justUnlockedWeek, setJustUnlockedWeek] = useState<number | null>(null);
     const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null);
+    const [stepDetail, setStepDetail] = useState<{ exercise: Exercise; week: number } | null>(null);
+    const [quizResults, setQuizResults] = useState<Record<string, RoadmapQuizResult>>({});
+    const [practiceLog, setPracticeLog] = useState<Record<string, RoadmapPracticeEntry[]>>({});
+    const [totalMinutes, setTotalMinutes] = useState<number>(0);
     const prevUnlockedRef = useRef<number[]>([1]);
 
     // Coach state
@@ -779,7 +788,7 @@ export default function TrainingPage() {
         prevUnlockedRef.current = unlockedWeeks;
     }, [unlockedWeeks]);
 
-    // Load saved progress
+    // Load saved progress (incl quiz + practice log)
     useEffect(() => {
         if (token && ageGroup && discipline) {
             const roadmapId = `${discipline.toLowerCase()}-${ageGroup}`;
@@ -789,9 +798,25 @@ export default function TrainingPage() {
                     if (saved) {
                         setCompletedTasks(new Set(saved.completedTasks));
                         if (saved.currentWeek) setExpandedWeek(saved.currentWeek);
+
+                        // Quiz results -> map by taskId
+                        const qmap: Record<string, RoadmapQuizResult> = {};
+                        (saved.quizResults || []).forEach((q) => { qmap[q.taskId] = q; });
+                        setQuizResults(qmap);
+
+                        // Practice entries -> grouped by taskId
+                        const pmap: Record<string, RoadmapPracticeEntry[]> = {};
+                        (saved.practiceLog || []).forEach((p) => {
+                            (pmap[p.taskId] ||= []).push(p);
+                        });
+                        setPracticeLog(pmap);
+                        setTotalMinutes(saved.totalMinutesTrained || 0);
                     } else {
                         setCompletedTasks(new Set());
                         setExpandedWeek(1);
+                        setQuizResults({});
+                        setPracticeLog({});
+                        setTotalMinutes(0);
                     }
                 }
             }).catch(() => {});
@@ -1153,6 +1178,41 @@ export default function TrainingPage() {
                                 </div>
 
                                 <MilestoneProgressBar percent={progressPercent} completed={completedCount} total={totalExercises} />
+
+                                {/* New: Training stats strip */}
+                                <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100">
+                                    <div className="text-center">
+                                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                                            <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Quizzes</span>
+                                        </div>
+                                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                                            {Object.values(quizResults).filter((q) => q.score / q.total >= 0.66).length}
+                                            <span className="text-sm text-gray-400 font-bold">/{Object.keys(quizResults).length || 0}</span>
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">Passed</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                                            <Dumbbell className="w-3.5 h-3.5 text-amber-500" />
+                                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Drill Time</span>
+                                        </div>
+                                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                                            {totalMinutes >= 60 ? `${Math.round(totalMinutes / 60 * 10) / 10}h` : `${totalMinutes}m`}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">Logged</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                                            <Sparkles className="w-3.5 h-3.5 text-red-500" />
+                                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sessions</span>
+                                        </div>
+                                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                                            {Object.values(practiceLog).reduce((s, arr) => s + arr.length, 0)}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">Practice logs</p>
+                                    </div>
+                                </div>
                             </motion.div>
 
                             {/* --- Week Cards --- */}
@@ -1310,18 +1370,40 @@ export default function TrainingPage() {
                                                                             </p>
                                                                         </div>
 
-                                                                        {/* Watch Video button */}
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setVideoModal({ url: exercise.videoUrl, name: exercise.name });
-                                                                            }}
-                                                                            className="flex-shrink-0 mt-0.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 text-red-600 hover:text-red-700 text-[11px] font-bold uppercase tracking-wider transition-all opacity-40 group-hover:opacity-100 sm:opacity-100 cursor-pointer"
-                                                                            aria-label={`Watch video for ${exercise.name}`}
-                                                                        >
-                                                                            <Play className="w-3 h-3" />
-                                                                            <span className="hidden sm:inline">Watch</span>
-                                                                        </button>
+                                                                        {/* Open Step Detail (Watch + Quiz + Log) */}
+                                                                        <div className="flex flex-col sm:flex-row gap-1.5 flex-shrink-0">
+                                                                            {/* Quiz indicator */}
+                                                                            {quizResults[exercise.id] && (
+                                                                                <span
+                                                                                    title={`Quiz: ${quizResults[exercise.id].score}/${quizResults[exercise.id].total}`}
+                                                                                    className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold"
+                                                                                >
+                                                                                    <BookOpen className="w-2.5 h-2.5" />
+                                                                                    {quizResults[exercise.id].score}/{quizResults[exercise.id].total}
+                                                                                </span>
+                                                                            )}
+                                                                            {/* Practice minutes indicator */}
+                                                                            {practiceLog[exercise.id] && practiceLog[exercise.id].length > 0 && (
+                                                                                <span
+                                                                                    title="Minutes drilled"
+                                                                                    className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold"
+                                                                                >
+                                                                                    <Dumbbell className="w-2.5 h-2.5" />
+                                                                                    {practiceLog[exercise.id].reduce((s, e) => s + e.minutes, 0)}m
+                                                                                </span>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setStepDetail({ exercise, week: week.week });
+                                                                                }}
+                                                                                className="mt-0.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                                                                                aria-label={`Open ${exercise.name}`}
+                                                                            >
+                                                                                <Play className="w-3 h-3" />
+                                                                                <span className="hidden sm:inline">Open</span>
+                                                                            </button>
+                                                                        </div>
                                                                     </motion.div>
                                                                 );
                                                             })}
@@ -1577,7 +1659,38 @@ export default function TrainingPage() {
                 )}
             </AnimatePresence>
 
-            {/* ===== VIDEO MODAL ===== */}
+            {/* ===== STEP DETAIL MODAL (Watch + Concept Check + Practice Log) ===== */}
+            {stepDetail && ageGroup && discipline && (
+                <StepDetailModal
+                    open={!!stepDetail}
+                    exercise={stepDetail.exercise}
+                    week={stepDetail.week}
+                    discipline={discipline}
+                    ageGroup={ageGroup}
+                    roadmapId={`${discipline.toLowerCase()}-${ageGroup}`}
+                    token={token}
+                    isCompleted={completedTasks.has(stepDetail.exercise.id)}
+                    quizResult={quizResults[stepDetail.exercise.id] || null}
+                    practiceEntries={practiceLog[stepDetail.exercise.id] || []}
+                    onClose={() => setStepDetail(null)}
+                    onMarkComplete={async () => { await toggleTask(stepDetail.exercise.id); }}
+                    onUnmarkComplete={async () => { await toggleTask(stepDetail.exercise.id); }}
+                    onQuizSaved={(q) => {
+                        setQuizResults((prev) => ({ ...prev, [q.taskId]: q }));
+                        setToastMessage(`Quiz saved · ${q.score}/${q.total}`);
+                    }}
+                    onPracticeLogged={(entry) => {
+                        setPracticeLog((prev) => ({
+                            ...prev,
+                            [entry.taskId]: [...(prev[entry.taskId] || []), entry],
+                        }));
+                        setTotalMinutes((m) => m + entry.minutes);
+                        setToastMessage(`Practice logged · ${entry.minutes} min`);
+                    }}
+                />
+            )}
+
+            {/* ===== LEGACY VIDEO MODAL (kept for backwards compatibility) ===== */}
             <AnimatePresence>
                 {videoModal && (
                     <motion.div
@@ -1596,7 +1709,6 @@ export default function TrainingPage() {
                             className="relative w-full max-w-4xl rounded-2xl overflow-hidden border border-white/10 bg-neutral-950 shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Header */}
                             <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
                                 <h3 className="text-white font-bold text-sm truncate pr-4">{videoModal.name}</h3>
                                 <button
@@ -1606,7 +1718,6 @@ export default function TrainingPage() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                            {/* Embed */}
                             <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
                                 <iframe
                                     className="absolute inset-0 w-full h-full"

@@ -62,6 +62,7 @@ export function Navbar() {
         if (user.role === "fighter") {
             return [
                 { label: "DASHBOARD", href: "/dashboard/fighter" },
+                { label: "FIND COACH", href: "/connections" },
                 { label: "FIGHT CAMP", href: "/fight-camp" },
                 { label: "WEIGHT CUT", href: "/weight-cut" },
                 { label: "DOSSIER", href: "/opponent-dossier" },

@@ -1,204 +1,34 @@
 # 🥊 Octagon Oracle
 
-> AI-Powered MMA Analytics Platform - Fight predictions, fighter comparisons, training tools, and gym finder.
+> AI-Powered MMA Analytics & Coaching Platform — Fight predictions, fighter comparisons, structured training roadmaps with concept-checks & practice logging, coach⇄athlete connections, gym finder, and form correction.
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 ---
 
-## 🚀 Quick Start (Docker - Recommended)
+## 🚀 Quick Start (Local — No Docker)
 
-**Run the entire project with just 3 commands:**
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Omermuhammadi/Octagon.git
-cd Octagon
-
-# 2. Start everything (MongoDB + Backend + Frontend)
-docker-compose up --build -d
-
-# 3. Import the UFC data (wait ~30 seconds for services to start first)
-docker exec octagon-oracle-backend npm run import-data
-```
-
-### ✅ That's it! Open your browser:
-
-| Service | URL |
-|---------|-----|
-| **Frontend** | [http://localhost:3001](http://localhost:3001) |
-| **Backend API** | [http://localhost:5001/api](http://localhost:5001/api) |
-| **Health Check** | [http://localhost:5001/api/health](http://localhost:5001/api/health) |
-
-### 📋 Useful Docker Commands
-
-```bash
-# Check if all services are running
-docker-compose ps
-
-# View logs (all services)
-docker-compose logs -f
-
-# View logs (specific service)
-docker-compose logs -f frontend
-docker-compose logs -f backend
-docker-compose logs -f mongodb
-
-# Stop all services
-docker-compose down
-
-# Stop and remove all data (fresh start)
-docker-compose down -v
-
-# Rebuild after code changes
-docker-compose up --build -d
-```
-
----
-
-## 🔐 Getting Started
-
-After the services are running:
-
-1. Open [http://localhost:3001](http://localhost:3001)
-2. Click **"Get Started"** to register a new account
-3. Choose your role: **Fan** or **Coach**
-4. Explore the platform!
-
----
-
-## ✨ Features
-
-- 🔮 **AI Fight Predictions** - Data-driven fight outcome predictions with animated hero section
-- 📊 **Fighter Comparison** - Compare any two fighters side-by-side with detailed stats
-- 🏋️ **Training Hub** - Interactive lessons for MMA techniques (striking, grappling, footwork)
-- 🛡️ **Self-Defense Guide** - Comprehensive self-defense scenarios and techniques
-- 🏢 **Gym Finder** - Find MMA gyms across Pakistan with filters and directions
-- 📅 **Event Tracking** - Upcoming and past UFC events
-- 👤 **Dual Dashboards** - Personalized views for Fans and Coaches
-- 🎨 **Premium Animations** - GSAP & Framer Motion powered typewriter effects and split text animations
-
----
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS v4, Framer Motion, GSAP |
-| **Backend** | Node.js, Express.js, TypeScript |
-| **Database** | MongoDB 7 with Mongoose ODM |
-| **Auth** | JWT (JSON Web Tokens) with bcrypt |
-| **Container** | Docker & Docker Compose |
-
----
-
-## 📁 Project Structure
-
-```
-Octagon/
-├── 📂 backend/                 # Express.js API Server
-│   ├── src/
-│   │   ├── config/            # Database configuration
-│   │   ├── controllers/       # Route handlers (auth, fighters, events)
-│   │   ├── middleware/        # Auth middleware
-│   │   ├── models/            # Mongoose schemas
-│   │   ├── routes/            # API route definitions
-│   │   └── scripts/           # Data import scripts
-│   ├── data/                  # CSV data files (fighters, events, stats)
-│   └── Dockerfile
-│
-├── 📂 frontend/               # Next.js Web Application
-│   ├── app/                   # App router pages
-│   │   ├── (auth)/           # Login & Register
-│   │   ├── comparison/       # Fighter comparison
-│   │   ├── dashboard/        # Fan & Coach dashboards
-│   │   ├── form-check/       # Form correction tool
-│   │   ├── gyms/             # Gym finder
-│   │   ├── prediction/       # Fight predictions
-│   │   ├── profile/          # User profile
-│   │   ├── self-defense/     # Self-defense guide
-│   │   └── training/         # Training hub
-│   ├── components/           # Reusable React components
-│   ├── contexts/             # Auth context provider
-│   ├── lib/                  # API client & utilities
-│   └── Dockerfile
-│
-├── 📂 scripts/               # Database initialization
-│   └── mongo-init.js
-│
-├── docker-compose.yml        # Docker orchestration
-├── .env.example             # Environment template
-└── README.md
-```
-
----
-
-## 🔌 API Endpoints
-
-### Base URL: `http://localhost:5001/api`
-
-#### Health Check
-```
-GET /api/health → { "status": "healthy", "timestamp": "..." }
-```
-
-#### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-| GET | `/api/auth/me` | Get current user |
-| PUT | `/api/auth/profile` | Update profile |
-
-#### Fighters
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/fighters` | Get all fighters (paginated) |
-| GET | `/api/fighters/search?q=name` | Search fighters |
-| GET | `/api/fighters/compare?ids=id1,id2` | Compare fighters |
-| GET | `/api/fighters/:id` | Get fighter by ID |
-
-#### Events
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/events` | Get all events |
-| GET | `/api/events/upcoming` | Get upcoming events |
-| GET | `/api/events/recent` | Get recent events |
-
----
-
-## 🖥️ Local Development (Without Docker)
-
-If you prefer running without Docker or don't have enough disk space:
+This is the **recommended** path. The project runs entirely on your machine using local MongoDB Compass / mongod.
 
 ### Prerequisites
 - **Node.js 20+** ([Download](https://nodejs.org/))
-- **MongoDB 7+** - Either:
-  - Local installation ([Download](https://www.mongodb.com/try/download/community))
-  - OR MongoDB Atlas free tier ([Create Account](https://www.mongodb.com/cloud/atlas))
+- **MongoDB 7+** (Community Edition + Compass for GUI) ([Download](https://www.mongodb.com/try/download/community))
+- Two free terminals (one for backend, one for frontend)
 
-### Step 1: Clone the Repository
+### Step 1 — Clone & enter the project
 ```bash
 git clone https://github.com/Omermuhammadi/Octagon.git
 cd Octagon
 ```
 
-### Step 2: Setup MongoDB
+### Step 2 — Start MongoDB locally
+Make sure MongoDB is running on the default port `27017`. Verify in MongoDB Compass that you can connect to `mongodb://localhost:27017`.
 
-**Option A - Local MongoDB:**
-```bash
-# Make sure MongoDB is running
-# Windows: Check if MongoDB service is running in Services
-# Mac: brew services start mongodb-community
-# Linux: sudo systemctl start mongod
-```
+- **Windows:** check the `MongoDB` service in `services.msc` is running, OR run `mongod` from a terminal.
+- **Mac:** `brew services start mongodb-community`
+- **Linux:** `sudo systemctl start mongod`
 
-**Option B - MongoDB Atlas (Cloud - Free):**
-1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a free cluster
-3. Get your connection string (looks like: `mongodb+srv://user:pass@cluster.xxxxx.mongodb.net/octagon-oracle`)
-
-### Step 3: Setup Backend
+### Step 3 — Backend (Terminal 1)
 ```bash
 cd backend
 npm install
@@ -206,21 +36,26 @@ npm install
 
 Create a `.env` file in the `backend` folder:
 ```env
-MONGODB_URI=mongodb://localhost:27017/octagon-oracle
-JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
-JWT_EXPIRES_IN=7d
 PORT=5001
-```
-> **Note:** If using MongoDB Atlas, replace `MONGODB_URI` with your Atlas connection string.
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/octagon-oracle
+JWT_SECRET=octagonoracle-secret-2025-super-long-secure
+JWT_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:3000
 
-Import the UFC data and start the server:
+# Optional — enables the AI chatbot. Without it, the chatbot falls back to a keyword system.
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+Import the UFC dataset (only needed once) and start the dev server:
 ```bash
 npm run import-data
 npm run dev
 ```
-✅ Backend should be running at **http://localhost:5001**
+✅ Backend running at **http://localhost:5001** — verify with [http://localhost:5001/api/health](http://localhost:5001/api/health).
 
-### Step 4: Setup Frontend (New Terminal)
+### Step 4 — Frontend (Terminal 2)
 ```bash
 cd frontend
 npm install
@@ -231,101 +66,165 @@ Create a `.env.local` file in the `frontend` folder:
 NEXT_PUBLIC_API_URL=http://localhost:5001/api
 ```
 
-Start the development server:
+Start the dev server:
 ```bash
 npm run dev
 ```
-✅ Frontend should be running at **http://localhost:3000**
+✅ Frontend running at **http://localhost:3000**.
 
-### Step 5: Test the Application
-1. Open **http://localhost:3000** in your browser
-2. Click **"Get Started"** to register
-3. Choose **Fan** or **Coach** role
-4. Explore the platform!
+### Step 5 — Use it
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Register accounts with different roles to demo the platform: **Fan**, **Beginner**, **Fighter**, and **Coach**.
+3. From a Coach account, head to **Connections** to browse athletes and send a request — no email required.
+4. From a Fighter / Beginner / Fan account, head to **Find Coach / My Coach** to browse coaches and request to connect.
+5. Open **Training** to walk through a roadmap: **Watch → Concept Check → Log Practice → Mark Complete**. As trainees progress, their stats appear live on the connected coach's dashboard.
 
-### 📋 Quick Commands Reference (Local)
+---
 
-```bash
-# Backend (Terminal 1)
-cd backend
-npm run dev          # Start dev server
-npm run import-data  # Re-import UFC data
+## ✨ What's Inside
 
-# Frontend (Terminal 2)
-cd frontend
-npm run dev          # Start dev server (port 3000)
-npm run build        # Build for production
-npm run lint         # Check for linting errors
+### Stakeholder-aware design
+
+| Stakeholder | Highlights |
+|-------------|------------|
+| **Fan** | Fight predictions, fighter comparison, training roadmaps, self-defense, gym finder, events |
+| **Beginner** | Beginner-tier roadmaps, concept-check quizzes, practice logging, find-a-coach, messaging |
+| **Fighter** | Advanced roadmaps, fight camp, weight cut, opponent dossier, form check, find-a-coach |
+| **Coach** | Discover athletes (no email needed), trainee analytics, live roadmap progress, AI strategy optimizer, assignments, messaging |
+
+### Core features
+- 🔮 **AI Fight Predictions** — ML ensemble model trained on 8,400+ UFC fights (~70.7% accuracy)
+- ⚔️ **Strategy Optimizer** — coach-only AI fight game-plan generator
+- 📊 **Fighter Comparison** — head-to-head radar charts and stats
+- 🗺️ **Training Roadmaps** — 5 disciplines × 3 levels × 4 weeks of structured progression with:
+   - YouTube-embedded technique videos
+   - **Concept-check quizzes** per week (3-question MCQ with rationales)
+   - **Practice logging** (minutes drilled + notes per session)
+   - Server-side persisted progress, week-locking, and visible coach reporting
+- 🤝 **Connections Hub** — browse-and-request workflow for both coaches and trainees, no emails
+- 🎯 **Form Check** — live posture/technique correction
+- 📅 **Events**, 🏢 **Gym Finder**, 🛡️ **Self-Defense Guide**
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Framer Motion, GSAP |
+| **Backend** | Node.js, Express.js, TypeScript |
+| **Database** | MongoDB 7 with Mongoose ODM |
+| **Auth** | JWT (JSON Web Tokens) with bcrypt |
+| **AI** | Groq (Llama 3.3 70B) for chatbot/strategy, custom TS ensemble for predictions |
+
+---
+
+## 📁 Project Structure
+
+```
+Octagon/
+├── backend/                      # Express + Mongoose API
+│   ├── src/
+│   │   ├── controllers/          # Business logic per route
+│   │   ├── models/               # Mongoose schemas (User, CoachRelationship, RoadmapProgress, …)
+│   │   ├── routes/               # Express routers
+│   │   ├── middleware/           # JWT protect, error handlers
+│   │   └── server.ts             # App entry
+│   └── .env                      # Local environment variables
+├── frontend/                     # Next.js 16 app router
+│   └── app/
+│       ├── (auth)/               # Login / register
+│       ├── dashboard/            # /coach, /fighter, /beginner, /fan dashboards
+│       ├── connections/          # Connections Hub (Discover + Active + Past)
+│       ├── training/             # Roadmaps + StepDetailModal + quizBank
+│       ├── prediction/           # ML fight predictor
+│       ├── strategy/             # AI strategy optimizer (coach only)
+│       ├── form-check/           # Posture / form correction
+│       └── …
+└── README.md
 ```
 
 ---
 
-## 🔧 Environment Variables
+## 🗄️ MongoDB Collections
 
-The docker-compose.yml already has sensible defaults. For customization, create a `.env` file:
+- `users` — accounts (coach / fighter / beginner / fan), JWT-secured
+- `fighters` — UFC fighter profiles & stats
+- `events` — UFC event archive
+- `coachrelationships` — coach⇄trainee links (pending / active / declined / ended)
+- `roadmapprogresses` — per-user roadmap state, **quizResults**, **practiceLog**, totalMinutesTrained
+- `assignments`, `fighterAssignments` — coach-assigned tasks & training programs
+- `predictions`, `strategies`, `formsessions`, `chatlogs`, `fightcamps`, `weightlogs`, `messages`
 
-```env
-# Ports (defaults)
-FRONTEND_PORT=3001
-BACKEND_PORT=5001
-MONGO_PORT=27017
+---
 
-# Security
-JWT_SECRET=your-super-secret-jwt-key-min-32-characters
-JWT_EXPIRES_IN=7d
+## 🌐 API Routes (selected)
 
-# URLs
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
-FRONTEND_URL=http://localhost:3001
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login → returns JWT |
+| GET | `/api/relationships/discover` | Coach: browse athletes (with pending-state) |
+| GET | `/api/relationships/discover-coaches` | Trainee: browse coaches |
+| POST | `/api/relationships` | Request a connection (`traineeId` or `coachId`) |
+| PATCH | `/api/relationships/:id/respond` | Accept/decline a request |
+| GET | `/api/roadmaps/progress` | Get all roadmap progress for current user |
+| POST | `/api/roadmaps/progress` | Save week + completed-tasks state |
+| POST | `/api/roadmaps/progress/quiz` | Submit a concept-check quiz |
+| POST | `/api/roadmaps/progress/practice` | Log a practice session |
+| GET | `/api/roadmaps/progress/trainees` | Coach: every trainee's roadmap stats |
+| POST | `/api/prediction/predict` | ML fight outcome prediction |
+| POST | `/api/strategy/generate` | AI fight strategy (coach only) |
 
 ---
 
 ## 🐛 Troubleshooting
 
+### Backend won't connect to MongoDB
+- Confirm MongoDB Compass connects to `mongodb://localhost:27017`.
+- On Windows, open `services.msc` and start the `MongoDB Server` service.
+- Re-check the `MONGODB_URI` value in `backend/.env`.
+
 ### Port already in use
 ```bash
 # Windows PowerShell
-Get-Process -Id (Get-NetTCPConnection -LocalPort 3001).OwningProcess | Stop-Process -Force
+Get-Process -Id (Get-NetTCPConnection -LocalPort 5001).OwningProcess | Stop-Process -Force
 
 # Mac/Linux
-lsof -i :3001
-kill -9 <PID>
+lsof -i :5001 ; kill -9 <PID>
 ```
 
-### Docker issues
+### Frontend can't reach backend
+- Confirm `NEXT_PUBLIC_API_URL=http://localhost:5001/api` in `frontend/.env.local`.
+- Verify the backend health endpoint responds: `curl http://localhost:5001/api/health`.
+- Check `FRONTEND_URL=http://localhost:3000` is set in `backend/.env` (CORS).
+
+### Re-import the UFC dataset
 ```bash
-# Full cleanup and restart
-docker-compose down -v
-docker system prune -f
+cd backend
+npm run import-data
+```
+
+---
+
+## 🐳 Optional: Docker
+
+A `docker-compose.yml` and `Dockerfile`s ship with the project for parity with cloud deployment, but **the local setup above is the recommended development path** and is what the current build is verified against. If you want Docker:
+
+```bash
 docker-compose up --build -d
-```
-
-### Data not loading
-```bash
-# Wait for backend to be healthy, then re-import
-docker-compose ps  # Check backend is "healthy"
 docker exec octagon-oracle-backend npm run import-data
-```
-
-### Frontend can't connect to backend
-```bash
-# Check backend logs
-docker-compose logs backend
-
-# Ensure backend is healthy
-curl http://localhost:5001/api/health
 ```
 
 ---
 
 ## 👥 Contributors
 
-- **Omer Muhammadi** - Full Stack Development
-- **Hamza Naeem** - Full Stack Development
+- **Omer Muhammadi** — Full Stack Development
+- **Hamza Naeem** — Full Stack Development
 
 ---
 
 ## 📄 License
 
-This project is licensed under the ISC License.
+ISC — see `LICENSE`.

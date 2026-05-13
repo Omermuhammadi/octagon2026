@@ -268,4 +268,21 @@ async function main() {
   }
 }
 
-main();
+export async function importAllData(): Promise<void> {
+  console.log('🔄 Running data import...');
+  await Fighter.deleteMany({});
+  await Event.deleteMany({});
+  await FightStats.deleteMany({});
+
+  await importFighters();
+  console.log('');
+  await importEvents();
+  console.log('');
+  await importFightStats();
+
+  console.log('\n🎉 All data imported successfully!');
+}
+
+if (require.main === module) {
+  main();
+}

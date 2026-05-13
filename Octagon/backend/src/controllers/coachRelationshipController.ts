@@ -83,15 +83,73 @@ export const discoverAthletes = async (req: AuthRequest, res: Response): Promise
 };
 
 /**
+ * GET /api/relationships/discover-coaches
+ * Trainee only (fan/fighter/beginner) — browse all coaches not yet fully connected.
+ * Returns coaches with no relationship + those with only a pending outbound request.
+ * Mirrors discoverAthletes but inverted for the trainee perspective.
+ */
+export const discoverCoaches = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const me = req.user!;
+    if (!['fan', 'fighter', 'beginner'].includes(me.role)) {
+      res.status(403).json({ success: false, message: 'Trainees only' });
+      return;
+    }
+
+    const existingRels = await CoachRelationship.find({ traineeId: me._id })
+      .select('coachId status _id requestedBy')
+      .lean();
+
+    const excludeIds = existingRels
+      .filter((r) => ['active', 'declined', 'ended'].includes(r.status))
+      .map((r) => r.coachId);
+
+    const pendingMap: Record<string, string> = {};
+    existingRels
+      .filter((r) => r.status === 'pending')
+      .forEach((r) => { pendingMap[r.coachId.toString()] = (r._id as any).toString(); });
+
+    const coaches = await User.find({
+      role: 'coach',
+      _id: { $nin: excludeIds, $ne: me._id },
+    })
+      .select('name email role avatar discipline experienceLevel createdAt bio')
+      .sort({ createdAt: -1 })
+      .limit(60)
+      .lean();
+
+    // Compute trainee count per coach for trust signal
+    const coachIds = coaches.map((c) => c._id);
+    const traineeCounts = await CoachRelationship.aggregate([
+      { $match: { coachId: { $in: coachIds }, status: 'active' } },
+      { $group: { _id: '$coachId', count: { $sum: 1 } } },
+    ]);
+    const countMap: Record<string, number> = {};
+    traineeCounts.forEach((c: any) => { countMap[c._id.toString()] = c.count; });
+
+    const enriched = coaches.map((c) => ({
+      ...c,
+      pendingRelId: pendingMap[(c._id as any).toString()] || null,
+      activeTrainees: countMap[(c._id as any).toString()] || 0,
+    }));
+
+    res.json({ success: true, data: enriched });
+  } catch (error) {
+    console.error('Discover coaches error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
  * POST /api/relationships
  * Initiate a relationship.
  * - Coach inviting: body { traineeId } OR { traineeEmail } (click-to-request preferred)
- * - Trainee requesting: body { coachEmail }
+ * - Trainee requesting: body { coachId } OR { coachEmail } (click-to-request preferred)
  */
 export const createRelationship = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const me = req.user!;
-    const { traineeEmail, traineeId: traineeIdParam, coachEmail, notes } = req.body;
+    const { traineeEmail, traineeId: traineeIdParam, coachEmail, coachId: coachIdParam, notes } = req.body;
 
     let coachId: any;
     let traineeId: any;
@@ -121,13 +179,15 @@ export const createRelationship = async (req: AuthRequest, res: Response): Promi
       requestedBy = 'coach';
       recipientName = trainee.name;
     } else if (me.role === 'fighter' || me.role === 'beginner' || me.role === 'fan') {
-      if (!coachEmail) {
-        res.status(400).json({ success: false, message: 'coachEmail is required' });
+      if (!coachIdParam && !coachEmail) {
+        res.status(400).json({ success: false, message: 'coachId or coachEmail is required' });
         return;
       }
-      const coach = await User.findOne({ email: coachEmail.toLowerCase().trim() });
+      const coach = coachIdParam
+        ? await User.findById(coachIdParam)
+        : await User.findOne({ email: (coachEmail as string).toLowerCase().trim() });
       if (!coach) {
-        res.status(404).json({ success: false, message: 'No user found with that email' });
+        res.status(404).json({ success: false, message: 'No user found' });
         return;
       }
       if (coach.role !== 'coach') {

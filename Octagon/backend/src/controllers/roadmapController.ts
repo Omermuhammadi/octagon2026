@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { RoadmapProgress } from '../models';
+import { RoadmapProgress, CoachRelationship, User } from '../models';
 import { AuthRequest } from '../middleware';
 
 const EXERCISES_PER_WEEK = 4;
@@ -249,6 +249,196 @@ export const validateTaskToggle = async (req: AuthRequest, res: Response): Promi
     });
   } catch (error) {
     console.error('Validate task toggle error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// POST /api/roadmaps/progress/quiz - Save a quiz attempt for a step
+export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const { roadmapId, taskId, score, total, answers, discipline, ageGroup } = req.body;
+
+    if (!roadmapId || !taskId || typeof score !== 'number' || typeof total !== 'number') {
+      res.status(400).json({ success: false, message: 'roadmapId, taskId, score, total are required' });
+      return;
+    }
+    if (total <= 0 || score < 0 || score > total) {
+      res.status(400).json({ success: false, message: 'Invalid score/total' });
+      return;
+    }
+
+    const result = {
+      taskId,
+      score,
+      total,
+      answers: Array.isArray(answers) ? answers.map((a: any) => Number(a)).filter((n: number) => Number.isFinite(n)) : [],
+      passedAt: new Date(),
+    };
+
+    // Upsert progress doc and append/replace quiz result for this taskId
+    const progress = await RoadmapProgress.findOne({ userId: req.user._id, roadmapId });
+
+    if (!progress) {
+      const created = await RoadmapProgress.create({
+        userId: req.user._id,
+        roadmapId,
+        discipline: discipline || 'MMA',
+        ageGroup: ageGroup || '15-25',
+        completedTasks: [],
+        currentWeek: 1,
+        totalWeeks: 4,
+        unlockedWeeks: [1],
+        quizResults: [result],
+      });
+      res.json({ success: true, data: created });
+      return;
+    }
+
+    // Replace existing quiz result for this taskId, or add new
+    const existing = progress.quizResults.findIndex((q) => q.taskId === taskId);
+    if (existing >= 0) {
+      // Only overwrite if the new score is >= existing (don't lose a passing score on retry)
+      if (score >= progress.quizResults[existing].score) {
+        progress.quizResults[existing] = result as any;
+      } else {
+        progress.quizResults[existing].answers = result.answers;
+        progress.quizResults[existing].passedAt = result.passedAt;
+      }
+    } else {
+      progress.quizResults.push(result as any);
+    }
+    await progress.save();
+
+    res.json({ success: true, data: progress });
+  } catch (error) {
+    console.error('Submit quiz error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// POST /api/roadmaps/progress/practice - Log a practice session for a step
+export const logPractice = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const { roadmapId, taskId, minutes, notes, discipline, ageGroup } = req.body;
+
+    if (!roadmapId || !taskId) {
+      res.status(400).json({ success: false, message: 'roadmapId and taskId are required' });
+      return;
+    }
+
+    const mins = Math.max(0, Math.min(600, Number(minutes) || 0));
+    const trimmedNotes = (typeof notes === 'string' ? notes : '').slice(0, 500);
+    const entry = { taskId, minutes: mins, notes: trimmedNotes, loggedAt: new Date() };
+
+    const progress = await RoadmapProgress.findOne({ userId: req.user._id, roadmapId });
+    if (!progress) {
+      const created = await RoadmapProgress.create({
+        userId: req.user._id,
+        roadmapId,
+        discipline: discipline || 'MMA',
+        ageGroup: ageGroup || '15-25',
+        completedTasks: [],
+        currentWeek: 1,
+        totalWeeks: 4,
+        unlockedWeeks: [1],
+        practiceLog: [entry],
+        totalMinutesTrained: mins,
+      });
+      res.json({ success: true, data: created });
+      return;
+    }
+
+    progress.practiceLog.push(entry as any);
+    progress.totalMinutesTrained = (progress.totalMinutesTrained || 0) + mins;
+    await progress.save();
+
+    res.json({ success: true, data: progress });
+  } catch (error) {
+    console.error('Log practice error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/roadmaps/progress/trainees - Coach view of every trainee's roadmap progress
+export const getTraineeRoadmapProgress = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+    if (req.user.role !== 'coach') {
+      res.status(403).json({ success: false, message: 'Coach only' });
+      return;
+    }
+
+    const rels = await CoachRelationship.find({
+      coachId: req.user._id,
+      status: 'active',
+    })
+      .populate('traineeId', 'name email role discipline experienceLevel avatar')
+      .lean();
+
+    const traineeIds = rels.map((r) => r.traineeId._id || r.traineeId);
+    const allProgress = await RoadmapProgress.find({ userId: { $in: traineeIds } }).lean();
+
+    const summaries = rels.map((rel) => {
+      const t: any = rel.traineeId;
+      if (!t || typeof t !== 'object') return null;
+      const tIdStr = t._id.toString();
+      const tProgress = allProgress.filter((p) => p.userId.toString() === tIdStr);
+
+      const enriched = tProgress.map((p) => {
+        const perWeek = computeWeekProgress(p.completedTasks, p.totalWeeks || 4);
+        const totalSteps = (p.totalWeeks || 4) * EXERCISES_PER_WEEK;
+        const completedSteps = p.completedTasks.length;
+        const completionPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+        const avgQuizScore = p.quizResults.length > 0
+          ? Math.round(
+              (p.quizResults.reduce((sum, q) => sum + (q.score / q.total) * 100, 0) / p.quizResults.length)
+            )
+          : null;
+        return {
+          roadmapId: p.roadmapId,
+          discipline: p.discipline,
+          ageGroup: p.ageGroup,
+          completedSteps,
+          totalSteps,
+          completionPct,
+          currentWeek: p.currentWeek,
+          totalWeeks: p.totalWeeks,
+          weekProgress: perWeek,
+          quizzesTaken: p.quizResults.length,
+          avgQuizScore,
+          minutesTrained: p.totalMinutesTrained || 0,
+          recentPractice: (p.practiceLog || []).slice(-3).reverse(),
+          lastActiveAt: (p as any).updatedAt || p.startedAt,
+        };
+      });
+
+      return {
+        traineeId: tIdStr,
+        name: t.name,
+        role: t.role,
+        discipline: t.discipline,
+        experienceLevel: t.experienceLevel,
+        avatar: t.avatar,
+        roadmaps: enriched,
+      };
+    }).filter(Boolean);
+
+    res.json({ success: true, data: summaries });
+  } catch (error) {
+    console.error('Get trainee roadmap progress error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

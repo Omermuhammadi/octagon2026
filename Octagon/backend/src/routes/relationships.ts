@@ -7,6 +7,7 @@ import {
   listMyTrainees,
   getMyCoach,
   discoverAthletes,
+  discoverCoaches,
 } from '../controllers/coachRelationshipController';
 import { protect } from '../middleware';
 
@@ -19,6 +20,7 @@ router.post('/', createRelationship);
 router.get('/trainees', listMyTrainees);
 router.get('/my-coach', getMyCoach);
 router.get('/discover', discoverAthletes);
+router.get('/discover-coaches', discoverCoaches);
 router.patch('/:id/respond', respondToRelationship);
 router.patch('/:id/end', endRelationship);
 

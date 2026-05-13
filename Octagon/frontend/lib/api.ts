@@ -447,6 +447,21 @@ export interface Roadmap {
   description: string;
 }
 
+export interface RoadmapQuizResult {
+  taskId: string;
+  score: number;
+  total: number;
+  answers: number[];
+  passedAt: string;
+}
+
+export interface RoadmapPracticeEntry {
+  taskId: string;
+  minutes: number;
+  notes: string;
+  loggedAt: string;
+}
+
 export interface RoadmapProgressData {
   _id: string;
   roadmapId: string;
@@ -456,6 +471,34 @@ export interface RoadmapProgressData {
   currentWeek: number;
   totalWeeks: number;
   unlockedWeeks: number[];
+  quizResults?: RoadmapQuizResult[];
+  practiceLog?: RoadmapPracticeEntry[];
+  totalMinutesTrained?: number;
+}
+
+export interface TraineeRoadmapSummary {
+  traineeId: string;
+  name: string;
+  role: string;
+  discipline?: string;
+  experienceLevel?: string;
+  avatar?: string;
+  roadmaps: {
+    roadmapId: string;
+    discipline: string;
+    ageGroup: string;
+    completedSteps: number;
+    totalSteps: number;
+    completionPct: number;
+    currentWeek: number;
+    totalWeeks: number;
+    weekProgress: Record<string, { completed: number; total: number }>;
+    quizzesTaken: number;
+    avgQuizScore: number | null;
+    minutesTrained: number;
+    recentPractice: RoadmapPracticeEntry[];
+    lastActiveAt: string;
+  }[];
 }
 
 // Roadmap API
@@ -485,6 +528,29 @@ export const roadmapApi = {
       body: data,
       token,
     }),
+
+  submitQuiz: (
+    data: { roadmapId: string; taskId: string; score: number; total: number; answers: number[]; discipline?: string; ageGroup?: string },
+    token: string,
+  ) =>
+    apiRequest<RoadmapProgressData>('/roadmaps/progress/quiz', {
+      method: 'POST',
+      body: data,
+      token,
+    }),
+
+  logPractice: (
+    data: { roadmapId: string; taskId: string; minutes: number; notes: string; discipline?: string; ageGroup?: string },
+    token: string,
+  ) =>
+    apiRequest<RoadmapProgressData>('/roadmaps/progress/practice', {
+      method: 'POST',
+      body: data,
+      token,
+    }),
+
+  getTraineeProgress: (token: string) =>
+    apiRequest<TraineeRoadmapSummary[]>('/roadmaps/progress/trainees', { token }),
 };
 
 // Gym types
@@ -933,6 +999,20 @@ export interface DiscoverAthlete {
   pendingRelId: string | null;
 }
 
+export interface DiscoverCoach {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'coach';
+  avatar?: string;
+  discipline?: string;
+  experienceLevel?: string;
+  bio?: string;
+  createdAt: string;
+  pendingRelId: string | null;
+  activeTrainees: number;
+}
+
 export interface Relationship {
   _id: string;
   coachId: PopulatedUserRef;
@@ -975,11 +1055,14 @@ export const relationshipApi = {
   list: (token: string, status?: RelationshipStatus) =>
     apiRequest<Relationship[]>(`/relationships${status ? `?status=${status}` : ''}`, { token }),
 
-  create: (body: { traineeId?: string; traineeEmail?: string; coachEmail?: string; notes?: string }, token: string) =>
+  create: (body: { traineeId?: string; traineeEmail?: string; coachId?: string; coachEmail?: string; notes?: string }, token: string) =>
     apiRequest<Relationship>('/relationships', { method: 'POST', body, token }),
 
   discover: (token: string) =>
     apiRequest<DiscoverAthlete[]>('/relationships/discover', { token }),
+
+  discoverCoaches: (token: string) =>
+    apiRequest<DiscoverCoach[]>('/relationships/discover-coaches', { token }),
 
   respond: (id: string, action: 'accept' | 'decline', token: string) =>
     apiRequest<Relationship>(`/relationships/${id}/respond`, {

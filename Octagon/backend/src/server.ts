@@ -5,9 +5,10 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import { config } from './config';
-import { connectDB } from './config/database';
+import { connectDB, connectFallbackDB, stopMemoryMongo } from './config/database';
 import routes from './routes';
 import { syncEvents } from './services/sportsDbService';
+import { importAllData } from './scripts/importData';
 
 // Initialize express app
 const app: Application = express();
@@ -110,7 +111,18 @@ const PORT = config.port;
 const startServer = async () => {
   try {
     // Connect to MongoDB first
-    await connectDB();
+    try {
+      await connectDB();
+    } catch (error) {
+      console.warn('Primary MongoDB unavailable, starting embedded demo database...');
+      await connectFallbackDB();
+      try {
+        await importAllData();
+      } catch (seedError) {
+        console.error('Demo data seeding failed:', seedError);
+        console.warn('Starting API without seeded demo data.');
+      }
+    }
 
     // Then start the server
     const server = app.listen(PORT, () => {
@@ -137,8 +149,12 @@ Frontend URL: ${config.frontendUrl}
     const shutdown = (signal: string) => {
       console.log(`\n${signal} received. Shutting down gracefully...`);
       server.close(() => {
-        console.log('HTTP server closed.');
-        process.exit(0);
+        stopMemoryMongo()
+          .catch((stopError) => console.error('Failed to stop embedded MongoDB:', stopError))
+          .finally(() => {
+            console.log('HTTP server closed.');
+            process.exit(0);
+          });
       });
       // Force exit after 10s if still hanging
       setTimeout(() => process.exit(1), 10000);
