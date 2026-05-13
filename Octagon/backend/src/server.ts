@@ -19,6 +19,8 @@ app.use(helmet());
 // CORS configuration - allow both Docker (3001) and local dev (3000)
 const allowedOrigins = [
   config.frontendUrl,
+  'https://octagon2026.vercel.app',
+  process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://localhost:3001',
 ];
