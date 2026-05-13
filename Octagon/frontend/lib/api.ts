@@ -63,7 +63,9 @@ async function apiRequest<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    // Ensure there are no double slashes when combining base URL and endpoint
+    const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`.replace(/([^:])\/\//g, '$1/');
+    const response = await fetch(url, config);
     clearTimeout(timeoutId);
     const data: ApiResponse<T> = await response.json();
 
