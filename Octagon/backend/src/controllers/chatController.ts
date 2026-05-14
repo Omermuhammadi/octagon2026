@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
 import { ChatLog, Fighter, Gym, Product, Event } from '../models';
 import { AuthRequest } from '../middleware';
 
